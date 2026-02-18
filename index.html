@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>POL 365 · Global Geopolitics</title>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #fff; }
+    button { cursor: pointer; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    const REGIONS = [
+      { id: "mena",   label: "Middle East & N. Africa", icon: "☽", color: "#E8A838" },
+      { id: "usa",    label: "United States",           icon: "★", color: "#3B6FE0" },
+      { id: "europe", label: "Europe",                  icon: "♦", color: "#2E9E6B" },
+      { id: "russia", label: "Russia & Eurasia",        icon: "⬡", color: "#B0454A" },
+      { id: "china",  label: "China & East Asia",       icon: "◉", color: "#C0392B" },
+      { id: "india",  label: "South Asia",              icon: "◈", color: "#E67E22" },
+      { id: "africa", label: "Sub-Saharan Africa",      icon: "✦", color: "#8E44AD" },
+      { id: "latam",  label: "Latin America",           icon: "◆", color: "#16A085" },
+      { id: "seasia", label: "SE Asia & Pacific",       icon: "◇", color: "#1ABC9C" },
+    ];
+    const TERMS = [
+      { id: "T1", label: "Term I",   title: "State, Empire & the Making of the Modern World", weeks: "Weeks 1-13",  color: "#3B6FE0" },
+      { id: "T2", label: "Term II",  title: "Cold War, Decolonisation & Ideology",            weeks: "Weeks 14-26", color: "#E8A838" },
+      { id: "T3", label: "Term III", title: "Capitalism, Development & Political Economy",    weeks: "Weeks 27-39", color: "#2E9E6B" },
+      { id: "T4", label: "Term IV",  title: "Geopolitics, Democracy & the Current Crisis",   weeks: "Weeks 40-52", color: "#B0454A" },
+    ];
+    const TYPE_COLOR = {
+      "Key Event": "#3B6FE0",
+      "Key Actor": "#2E9E6B",
+      "Ideology & Theory": "#8E44AD",
+      "Case Study": "#E8A838",
+      "Primary Text": "#B0454A",
+    };
+
+    function getCurrentTerm(n) {
+      if (n <= 91)  return TERMS[0];
+      if (n <= 182) return TERMS[1];
+      if (n <= 273) return TERMS[2];
+      return TERMS[3];
+    }
+    function getDayKey() {
+      const d = new Date();
+      return d.getFullYear() + "-" + d.getMonth() + "-" + d.getDate();
+    }
+    function todayStr() {
+      return new Date().toLocaleDateString("en-GB", {
+        weekday: "long", day: "numeric", month: "long", year: "numeric"
+      });
+    }
+
+    // ── STORAGE (localStorage) ────────────────────────────────────────────────
+    function storageGet(key) {
+      try {
+        const v = localStorage.getItem(key);
+        return v ? JSON.parse(v) : null;
+      } catch(e) { return null; }
+    }
+    function storageSet(key, value) {
+      try {
+        localStorage.setItem(key, JSON.stringify(value));
+      } catch(e) {}
+    }
+
+    // ── JSON PARSER ───────────────────────────────────────────────────────────
+    function safeParseJSON(text) {
+      const start = text.indexOf("{");
+      const end   = text.lastIndexOf("}");
+      if (start === -1 || end === -1) {
+        throw new Error("No JSON found. Response was: " + text.substring(0, 200));
+      }
+      let s = text.substring(start, end + 1)
+        .replace(/[\u2018\u2019\u02BC]/g, "'")
+        .replace(/[\u201C\u201D\u00AB\u00BB]/g, '"')
+        .replace(/[\u2013\u2014\u2212]/g, "-")
+        .replace(/\u2026/g, "...");
+      let out = "", inStr = false, esc = false;
+      for (let i = 0; i < s.length; i++) {
+        const c = s[i];
+        if (esc)        { out += c; esc = false; continue; }
+        if (c === "\\") { out += c; esc = true;  continue; }
+        if (c === '"')  { inStr = !inStr; out += c; continue; }
+        if (inStr) {
+          if (c === "\n") { out += "\\n"; continue; }
+          if (c === "\r") { out += "\\r"; continue; }
+          if (c === "\t") { out += "\\t"; continue; }
+          if (c === "\f") { out += "\\f"; continue; }
+          if (c === "\b") { out += "\\b"; continue; }
+        }
+        out += c;
+      }
+      try {
+        return JSON.parse(out);
+      } catch(err) {
+        throw new Error("JSON.parse failed: " + err.message + ". Snippet: " + out.substring(0, 300));
+      }
+    }
+
+    // ── API ───────────────────────────────────────────────────────────────────
+    async function callClaude(prompt, apiKey) {
+      const resp = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": apiKey,
+          "anthropic-version": "2023-06-01",
+          "anthropic-dangerous-direct-browser-access": "true",
+        },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-5",
+          max_tokens: 2000,
+          messages: [{ role: "user", content: prompt }]
+        })
+      });
+      const data = await resp.json();
+      if (data.error) throw new Error("API error: " + data.error.message);
+      const text = (data.content || [])
+        .filter(b => b.type === "text")
+        .map(b => b.text)
+        .join("");
+      return safeParseJSON(text);
+    }
+
+    // ── PROMPT ────────────────────────────────────────────────────────────────
+    function buildPrompt(term, dayNum, recent) {
+      return [
+        "You are a geopolitics professor building a 365-day curriculum on world politics.",
+        "Day: " + dayNum + " of 365. Term: " + term.title + " (" + term.weeks + ").",
+        "Recent topics covered: " + (recent || "None - this is Day 1."),
+        "",
+        "Choose 3 thematically linked topics from DIFFERENT world regions. Be very specific.",
+        "Focus on power, statecraft, ideology, conflict, and political economy.",
+        "",
+        "CRITICAL: Return ONLY a raw JSON object. No markdown. No explanation. No backticks.",
+        "Your response must start with { and end with }.",
+        "Every string value must be on a single line with no line breaks inside it.",
+        "",
+        '{',
+        '  "session_title": "The title of this seminar session",',
+        '  "abstract": "Two sentences framing the intellectual argument. Keep on one line.",',
+        '  "objectives": ["First learning objective", "Second learning objective", "Third learning objective"],',
+        '  "topics": [',
+        '    { "title": "Specific topic name", "region": "Europe", "type": "Key Event", "argument": "Core argument in one line.", "figures": ["Person A", "Person B"], "question": "Seminar question?", "reading": "Author, Title, Year" },',
+        '    { "title": "Specific topic name", "region": "China & East Asia", "type": "Key Actor", "argument": "Core argument in one line.", "figures": ["Person A"], "question": "Seminar question?", "reading": "Author, Title, Year" },',
+        '    { "title": "Specific topic name", "region": "Latin America", "type": "Case Study", "argument": "Core argument in one line.", "figures": ["Person A"], "question": "Seminar question?", "reading": "Author, Title, Year" }',
+        '  ],',
+        '  "data": { "title": "Data module title", "why": "Why this data matters politically.", "source": "SIPRI Military Expenditure Database", "question": "What political question does this illuminate?", "compare": ["Region A", "Region B", "Region C"] },',
+        '  "thread": "One sentence connecting today to the term theme.",',
+        '  "tomorrow": "One line teaser for the next session."',
+        '}',
+        "",
+        "Valid regions: Middle East & N. Africa, United States, Europe, Russia & Eurasia, China & East Asia, South Asia, Sub-Saharan Africa, Latin America, SE Asia & Pacific, Global/Comparative",
+        "Valid types: Key Event, Key Actor, Ideology & Theory, Case Study, Primary Text",
+      ].join("\n");
+    }
+
+    // ── COMPONENTS ────────────────────────────────────────────────────────────
+    function Tag({ label, color }) {
+      const c = color || "#888";
+      return (
+        <span style={{
+          display: "inline-block", fontSize: "10px", fontWeight: 600,
+          letterSpacing: "0.5px", textTransform: "uppercase",
+          color: c, background: c + "18", border: "1px solid " + c + "44",
+          padding: "2px 8px", borderRadius: "4px", fontFamily: "system-ui, sans-serif"
+        }}>{label}</span>
+      );
+    }
+
+    function TopicCard({ topic, n, termColor }) {
+      const [open, setOpen] = useState(false);
+      const tc  = TYPE_COLOR[topic.type] || "#888";
+      const reg = REGIONS.find(r => r.label === topic.region);
+      return (
+        <div style={{ border: "1px solid #EBEBEB", borderRadius: "10px", overflow: "hidden", marginBottom: "10px" }}>
+          <div
+            onClick={() => setOpen(o => !o)}
+            style={{ padding: "16px 20px", cursor: "pointer", display: "flex", gap: "14px", alignItems: "flex-start", borderLeft: "4px solid " + tc, background: "#fff" }}
+          >
+            <div style={{ fontSize: "20px", lineHeight: 1, marginTop: "3px", color: reg ? reg.color : "#888" }}>{reg ? reg.icon : "◉"}</div>
+            <div style={{ flex: 1 }}>
+              <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginBottom: "6px" }}>
+                <Tag label={topic.type} color={tc} />
+                <Tag label={topic.region} color={reg ? reg.color : "#888"} />
+              </div>
+              <div style={{ fontSize: "15px", fontWeight: 600, color: "#1A1A1A", lineHeight: 1.4 }}>{n}. {topic.title}</div>
+            </div>
+            <div style={{ fontSize: "18px", color: "#CCC", flexShrink: 0 }}>{open ? "−" : "+"}</div>
+          </div>
+          {open && (
+            <div style={{ padding: "16px 20px 20px", borderTop: "1px solid #F0F0F0", background: "#FAFAFA" }}>
+              <p style={{ fontSize: "13px", color: "#444", lineHeight: 1.75, marginBottom: "14px", fontStyle: "italic" }}>{topic.argument}</p>
+              {topic.figures && topic.figures.length > 0 && (
+                <div style={{ marginBottom: "12px" }}>
+                  <div style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "1px", textTransform: "uppercase", color: "#AAA", marginBottom: "6px", fontFamily: "system-ui, sans-serif" }}>Key Figures</div>
+                  <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+                    {topic.figures.map((f, i) => (
+                      <span key={i} style={{ fontSize: "12px", background: "#EFEFEF", color: "#333", padding: "3px 10px", borderRadius: "20px", fontFamily: "system-ui, sans-serif" }}>{f}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <div style={{ background: "#fff", borderLeft: "3px solid " + termColor, border: "1px solid " + termColor + "33", borderRadius: "0 6px 6px 0", padding: "10px 14px", marginBottom: "12px" }}>
+                <div style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "1px", textTransform: "uppercase", color: "#AAA", marginBottom: "4px", fontFamily: "system-ui, sans-serif" }}>Seminar Question</div>
+                <div style={{ fontSize: "13px", color: "#222", fontStyle: "italic", lineHeight: 1.6 }}>"{topic.question}"</div>
+              </div>
+              {topic.reading && (
+                <div style={{ fontSize: "12px", color: "#666", fontFamily: "system-ui, sans-serif" }}>
+                  <strong>Reading: </strong><em>{topic.reading}</em>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    function DataCard({ data }) {
+      if (!data) return null;
+      return (
+        <div style={{ border: "1px solid #EBEBEB", borderRadius: "10px", overflow: "hidden" }}>
+          <div style={{ background: "#F7FFF9", borderBottom: "1px solid #D0EDD8", padding: "14px 20px", borderLeft: "4px solid #2E9E6B" }}>
+            <div style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "1px", textTransform: "uppercase", color: "#2E9E6B", marginBottom: "4px", fontFamily: "system-ui, sans-serif" }}>Data & Evidence</div>
+            <div style={{ fontSize: "15px", fontWeight: 600, color: "#1A1A1A" }}>{data.title}</div>
+          </div>
+          <div style={{ padding: "16px 20px", background: "#fff" }}>
+            <p style={{ fontSize: "13px", color: "#444", lineHeight: 1.7, marginBottom: "14px", fontFamily: "system-ui, sans-serif" }}>{data.why}</p>
+            <div style={{ background: "#F7F7F7", border: "1px solid #E8E8E8", borderRadius: "6px", padding: "10px 14px", marginBottom: "12px" }}>
+              <div style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "1px", textTransform: "uppercase", color: "#AAA", marginBottom: "4px", fontFamily: "system-ui, sans-serif" }}>Dataset</div>
+              <div style={{ fontSize: "13px", fontWeight: 600, color: "#222", fontFamily: "system-ui, sans-serif" }}>{data.source}</div>
+            </div>
+            <div style={{ background: "#FFFDF0", borderLeft: "3px solid #E8A838", border: "1px solid #EEE0A0", borderRadius: "0 6px 6px 0", padding: "10px 14px", marginBottom: "14px" }}>
+              <div style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "1px", textTransform: "uppercase", color: "#AAA", marginBottom: "4px", fontFamily: "system-ui, sans-serif" }}>Analytical Question</div>
+              <div style={{ fontSize: "13px", color: "#333", fontStyle: "italic" }}>{data.question}</div>
+            </div>
+            {data.compare && data.compare.length > 0 && (
+              <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+                {data.compare.map((c, i) => {
+                  const r = REGIONS.find(r => r.label === c || r.id === c);
+                  return <Tag key={i} label={c} color={r ? r.color : "#888"} />;
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    // ── API KEY GATE ──────────────────────────────────────────────────────────
+    function ApiKeyGate({ onSave }) {
+      const [val, setVal] = useState("");
+      return (
+        <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#fff", fontFamily: "system-ui, sans-serif", padding: "20px" }}>
+          <div style={{ maxWidth: "440px", width: "100%", textAlign: "center" }}>
+            <div style={{ fontSize: "28px", marginBottom: "12px" }}>🎓</div>
+            <div style={{ fontSize: "20px", fontFamily: "Georgia, serif", color: "#111", marginBottom: "8px" }}>POL 365 · Global Geopolitics</div>
+            <p style={{ fontSize: "13px", color: "#888", lineHeight: 1.7, marginBottom: "24px" }}>
+              This app uses the Anthropic API to generate daily sessions. Enter your API key below — it will be saved only in your browser's local storage and never sent anywhere except Anthropic.
+            </p>
+            <input
+              type="password"
+              placeholder="sk-ant-..."
+              value={val}
+              onChange={e => setVal(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && val.startsWith("sk-") && onSave(val)}
+              style={{ width: "100%", padding: "11px 14px", border: "1px solid #DDD", borderRadius: "8px", fontSize: "14px", marginBottom: "12px", outline: "none", fontFamily: "monospace" }}
+            />
+            <button
+              onClick={() => onSave(val)}
+              disabled={!val.startsWith("sk-")}
+              style={{ width: "100%", background: val.startsWith("sk-") ? "#3B6FE0" : "#EEE", color: val.startsWith("sk-") ? "#fff" : "#AAA", border: "none", padding: "12px", borderRadius: "8px", fontSize: "14px", fontWeight: 600, cursor: val.startsWith("sk-") ? "pointer" : "default" }}
+            >
+              Save & Continue
+            </button>
+            <p style={{ fontSize: "11px", color: "#CCC", marginTop: "12px" }}>
+              Get an API key at <a href="https://console.anthropic.com" target="_blank" rel="noreferrer" style={{ color: "#3B6FE0" }}>console.anthropic.com</a>
+            </p>
+          </div>
+        </div>
+      );
+    }
+
+    // ── APP ───────────────────────────────────────────────────────────────────
+    function App() {
+      const [apiKey,  setApiKey]  = useState(() => storageGet("polcourse_apikey") || "");
+      const [history, setHistory] = useState({});
+      const [session, setSession] = useState(null);
+      const [loading, setLoading] = useState(false);
+      const [error,   setError]   = useState("");
+      const [view,    setView]    = useState("today");
+      const [ready,   setReady]   = useState(false);
+
+      const todayKey  = getDayKey();
+      const totalDone = Object.keys(history).length;
+      const dayNum    = session ? totalDone : totalDone + 1;
+      const term      = getCurrentTerm(dayNum);
+      const pct       = Math.min(100, Math.round((totalDone / 365) * 100));
+
+      useEffect(() => {
+        const h = storageGet("polcourse_v8");
+        if (h) {
+          setHistory(h);
+          if (h[todayKey]) setSession(h[todayKey]);
+        }
+        setReady(true);
+      }, []);
+
+      function saveApiKey(key) {
+        storageSet("polcourse_apikey", key);
+        setApiKey(key);
+      }
+
+      async function generate() {
+        setLoading(true);
+        setError("");
+        try {
+          const recent = Object.values(history)
+            .slice(-5)
+            .flatMap(d => (d.topics || []).map(t => t.title))
+            .join(", ");
+          const sess = await callClaude(buildPrompt(term, dayNum, recent), apiKey);
+          const newH = { ...history, [todayKey]: sess };
+          setSession(sess);
+          setHistory(newH);
+          storageSet("polcourse_v8", newH);
+        } catch(e) {
+          setError(e.message || "Generation failed. Please try again.");
+        }
+        setLoading(false);
+      }
+
+      function resetAll() {
+        if (!window.confirm("Reset all progress?")) return;
+        setHistory({});
+        setSession(null);
+        storageSet("polcourse_v8", {});
+      }
+
+      function clearApiKey() {
+        if (!window.confirm("Remove saved API key?")) return;
+        storageSet("polcourse_apikey", "");
+        setApiKey("");
+      }
+
+      if (!apiKey) return <ApiKeyGate onSave={saveApiKey} />;
+
+      if (!ready) return (
+        <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "system-ui, sans-serif", color: "#CCC" }}>
+          Loading...
+        </div>
+      );
+
+      return (
+        <div style={{ minHeight: "100vh", background: "#fff", color: "#1A1A1A", fontFamily: "Georgia, serif" }}>
+          {/* HEADER */}
+          <div style={{ borderBottom: "1px solid #EBEBEB", padding: "24px 28px 0", position: "sticky", top: 0, background: "#fff", zIndex: 10 }}>
+            <div style={{ maxWidth: "780px", margin: "0 auto" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px" }}>
+                <div>
+                  <div style={{ fontSize: "10px", fontFamily: "system-ui, sans-serif", fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", color: "#BBB", marginBottom: "5px" }}>
+                    POL 365 · Global Geopolitics
+                  </div>
+                  <div style={{ fontSize: "22px", color: "#111" }}>The Grand Curriculum</div>
+                </div>
+                <div style={{ textAlign: "right" }}>
+                  <div style={{ fontSize: "9px", fontFamily: "system-ui, sans-serif", fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", color: "#BBB" }}>Day</div>
+                  <div style={{ fontSize: "32px", fontWeight: 800, color: term.color, lineHeight: 1, fontFamily: "system-ui, sans-serif" }}>{totalDone}</div>
+                  <div style={{ fontSize: "10px", color: "#CCC", fontFamily: "system-ui, sans-serif" }}>of 365</div>
+                </div>
+              </div>
+              {/* Term pills */}
+              <div style={{ display: "flex", gap: "5px", marginBottom: "12px", flexWrap: "wrap" }}>
+                {TERMS.map(t => (
+                  <div key={t.id} style={{
+                    padding: "4px 12px", borderRadius: "20px", fontSize: "10px",
+                    fontFamily: "system-ui, sans-serif", fontWeight: 600,
+                    background: t.id === term.id ? t.color : "transparent",
+                    color: t.id === term.id ? "#fff" : "#CCC",
+                    border: "1.5px solid " + (t.id === term.id ? t.color : "#E8E8E8"),
+                  }}>{t.label}</div>
+                ))}
+              </div>
+              {/* Progress bar */}
+              <div style={{ height: "3px", background: "#F0F0F0", borderRadius: "2px" }}>
+                <div style={{ height: "100%", width: pct + "%", background: term.color, borderRadius: "2px", transition: "width 0.5s" }} />
+              </div>
+              {/* Tabs */}
+              <div style={{ display: "flex" }}>
+                {[["today", "Today's Session"], ["syllabus", "Syllabus"], ["archive", "Archive"]].map(([id, label]) => (
+                  <button key={id} onClick={() => setView(id)} style={{
+                    background: "none", border: "none",
+                    borderBottom: view === id ? "3px solid " + term.color : "3px solid transparent",
+                    color: view === id ? term.color : "#BBB",
+                    fontFamily: "system-ui, sans-serif", fontWeight: 600, fontSize: "11px",
+                    padding: "12px 16px 10px", cursor: "pointer", marginBottom: "-1px",
+                  }}>{label}</button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* CONTENT */}
+          <div style={{ maxWidth: "780px", margin: "0 auto", padding: "28px 28px 80px" }}>
+
+            {/* ── TODAY ── */}
+            {view === "today" && (
+              <div>
+                {!session ? (
+                  <div style={{ textAlign: "center", padding: "70px 20px" }}>
+                    <div style={{ width: "64px", height: "64px", borderRadius: "50%", background: term.color + "15", border: "2px solid " + term.color + "40", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 18px", fontSize: "24px" }}>🎓</div>
+                    <div style={{ fontSize: "20px", color: "#111", marginBottom: "6px" }}>
+                      {totalDone === 0 ? "Welcome — Day 1 of 365" : "Day " + dayNum + " ready"}
+                    </div>
+                    <div style={{ fontSize: "12px", color: "#AAA", fontFamily: "system-ui, sans-serif", marginBottom: "6px" }}>{todayStr()}</div>
+                    <div style={{ display: "inline-block", background: term.color + "10", border: "1px solid " + term.color + "30", borderRadius: "6px", padding: "6px 16px", marginBottom: "24px" }}>
+                      <span style={{ fontSize: "11px", fontFamily: "system-ui, sans-serif", fontWeight: 600, color: term.color }}>{term.label} · {term.title}</span>
+                    </div>
+                    <div>
+                      <button
+                        onClick={generate}
+                        disabled={loading}
+                        style={{ background: loading ? "#EEE" : term.color, color: loading ? "#AAA" : "#fff", border: "none", padding: "13px 36px", borderRadius: "8px", fontSize: "14px", fontWeight: 600, fontFamily: "system-ui, sans-serif", cursor: loading ? "default" : "pointer", display: "block", margin: "0 auto" }}
+                      >
+                        {loading ? "Generating..." : "Generate Today's Session"}
+                      </button>
+                      {error && (
+                        <div style={{ marginTop: "14px", color: "#C0392B", fontSize: "12px", fontFamily: "system-ui, sans-serif", background: "#FFF0F0", border: "1px solid #FFCCCC", borderRadius: "6px", padding: "10px 14px", maxWidth: "480px", margin: "14px auto 0", textAlign: "left", wordBreak: "break-word" }}>
+                          <strong>Error: </strong>{error}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    {/* Session header */}
+                    <div style={{ borderLeft: "4px solid " + term.color, paddingLeft: "18px", marginBottom: "24px" }}>
+                      <div style={{ fontSize: "10px", fontFamily: "system-ui, sans-serif", fontWeight: 700, color: term.color, letterSpacing: "1px", textTransform: "uppercase", marginBottom: "5px" }}>
+                        {term.label} · {todayStr()}
+                      </div>
+                      <div style={{ fontSize: "21px", color: "#111", lineHeight: 1.3, marginBottom: "10px" }}>{session.session_title}</div>
+                      <p style={{ fontSize: "13px", color: "#555", lineHeight: 1.75, fontStyle: "italic", marginBottom: "12px" }}>{session.abstract}</p>
+                      {(session.objectives || []).map((o, i) => (
+                        <div key={i} style={{ display: "flex", gap: "10px", fontSize: "13px", color: "#444", fontFamily: "system-ui, sans-serif", marginBottom: "4px" }}>
+                          <span style={{ color: term.color, fontWeight: 800, flexShrink: 0 }}>0{i + 1}</span>
+                          <span>{o}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{ fontSize: "10px", fontFamily: "system-ui, sans-serif", fontWeight: 700, letterSpacing: "1.5px", textTransform: "uppercase", color: "#CCC", marginBottom: "10px" }}>
+                      Three Topics — tap to expand
+                    </div>
+                    {(session.topics || []).map((t, i) => (
+                      <TopicCard key={i} topic={t} n={i + 1} termColor={term.color} />
+                    ))}
+                    <div style={{ margin: "22px 0 10px", fontSize: "10px", fontFamily: "system-ui, sans-serif", fontWeight: 700, letterSpacing: "1.5px", textTransform: "uppercase", color: "#CCC" }}>
+                      Data Module
+                    </div>
+                    <DataCard data={session.data} />
+                    <div style={{ marginTop: "20px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                      <div style={{ background: "#F8F8F8", border: "1px solid #EBEBEB", borderRadius: "8px", padding: "12px 14px" }}>
+                        <div style={{ fontSize: "10px", fontFamily: "system-ui, sans-serif", fontWeight: 700, letterSpacing: "1px", textTransform: "uppercase", color: "#CCC", marginBottom: "5px" }}>Thematic Thread</div>
+                        <div style={{ fontSize: "13px", color: "#444", lineHeight: 1.6, fontFamily: "system-ui, sans-serif" }}>{session.thread}</div>
+                      </div>
+                      <div style={{ background: "#F8F8F8", border: "1px solid #EBEBEB", borderRadius: "8px", padding: "12px 14px" }}>
+                        <div style={{ fontSize: "10px", fontFamily: "system-ui, sans-serif", fontWeight: 700, letterSpacing: "1px", textTransform: "uppercase", color: "#CCC", marginBottom: "5px" }}>Next Session</div>
+                        <div style={{ fontSize: "13px", color: "#444", lineHeight: 1.6, fontStyle: "italic", fontFamily: "system-ui, sans-serif" }}>"{session.tomorrow}"</div>
+                      </div>
+                    </div>
+                    <div style={{ textAlign: "right", marginTop: "18px", display: "flex", justifyContent: "flex-end", gap: "8px" }}>
+                      <button onClick={clearApiKey} style={{ background: "none", border: "1px solid #EBEBEB", color: "#CCC", padding: "6px 14px", borderRadius: "6px", fontSize: "11px", fontFamily: "system-ui, sans-serif", cursor: "pointer" }}>
+                        Change API Key
+                      </button>
+                      <button onClick={resetAll} style={{ background: "none", border: "1px solid #EBEBEB", color: "#CCC", padding: "6px 14px", borderRadius: "6px", fontSize: "11px", fontFamily: "system-ui, sans-serif", cursor: "pointer" }}>
+                        Reset Course
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ── SYLLABUS ── */}
+            {view === "syllabus" && (
+              <div>
+                <div style={{ marginBottom: "24px" }}>
+                  <div style={{ fontSize: "20px", marginBottom: "8px" }}>Course Syllabus</div>
+                  <p style={{ fontSize: "13px", color: "#555", lineHeight: 1.75, fontFamily: "system-ui, sans-serif", maxWidth: "580px" }}>
+                    A 365-day geopolitics curriculum spanning every major world region. Each daily session delivers three thematically linked topics and a quantitative data module.
+                  </p>
+                </div>
+                <div style={{ fontSize: "10px", fontFamily: "system-ui, sans-serif", fontWeight: 700, letterSpacing: "1.5px", textTransform: "uppercase", color: "#CCC", marginBottom: "10px" }}>Four Terms</div>
+                <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginBottom: "28px" }}>
+                  {TERMS.map(t => (
+                    <div key={t.id} style={{ border: "1px solid " + (t.id === term.id ? t.color + "44" : "#EBEBEB"), borderLeft: "4px solid " + t.color, borderRadius: "0 8px 8px 0", padding: "12px 16px", background: t.id === term.id ? t.color + "06" : "#fff" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "3px" }}>
+                        <div style={{ fontSize: "10px", fontFamily: "system-ui, sans-serif", fontWeight: 700, color: t.color, letterSpacing: "1px", textTransform: "uppercase" }}>{t.label} · {t.weeks}</div>
+                        {t.id === term.id && <Tag label="Current" color={t.color} />}
+                      </div>
+                      <div style={{ fontSize: "14px", color: "#111" }}>{t.title}</div>
+                    </div>
+                  ))}
+                </div>
+                <div style={{ fontSize: "10px", fontFamily: "system-ui, sans-serif", fontWeight: 700, letterSpacing: "1.5px", textTransform: "uppercase", color: "#CCC", marginBottom: "10px" }}>Regions Covered</div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "8px" }}>
+                  {REGIONS.map(r => (
+                    <div key={r.id} style={{ border: "1px solid #EBEBEB", borderRadius: "8px", padding: "10px 12px", display: "flex", gap: "8px", alignItems: "center" }}>
+                      <span style={{ fontSize: "16px", color: r.color }}>{r.icon}</span>
+                      <span style={{ fontSize: "11px", fontFamily: "system-ui, sans-serif", color: "#444", lineHeight: 1.3 }}>{r.label}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* ── ARCHIVE ── */}
+            {view === "archive" && (
+              <div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "22px" }}>
+                  <div>
+                    <div style={{ fontSize: "20px", marginBottom: "3px" }}>Archive</div>
+                    <div style={{ fontSize: "12px", color: "#AAA", fontFamily: "system-ui, sans-serif" }}>
+                      {totalDone} session{totalDone !== 1 ? "s" : ""} complete · {365 - totalDone} remaining
+                    </div>
+                  </div>
+                  <div style={{ textAlign: "center" }}>
+                    <div style={{ fontSize: "28px", fontWeight: 800, fontFamily: "system-ui, sans-serif", color: term.color, lineHeight: 1 }}>{pct}%</div>
+                    <div style={{ fontSize: "9px", color: "#CCC", fontFamily: "system-ui, sans-serif", textTransform: "uppercase", letterSpacing: "1px" }}>Done</div>
+                  </div>
+                </div>
+                <div style={{ marginBottom: "24px" }}>
+                  <div style={{ fontSize: "10px", fontFamily: "system-ui, sans-serif", fontWeight: 700, letterSpacing: "1.5px", textTransform: "uppercase", color: "#CCC", marginBottom: "8px" }}>Year Map</div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "3px" }}>
+                    {Array.from({ length: 365 }, (_, i) => (
+                      <div key={i} title={"Day " + (i + 1)} style={{ width: "11px", height: "11px", borderRadius: "2px", background: i < totalDone ? term.color : "#F0F0F0" }} />
+                    ))}
+                  </div>
+                </div>
+                {totalDone === 0 ? (
+                  <div style={{ textAlign: "center", padding: "50px 0", color: "#CCC", fontFamily: "system-ui, sans-serif" }}>No sessions yet.</div>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                    {Object.entries(history).reverse().map(([key, d], i) => (
+                      <div key={key} style={{ border: "1px solid #EBEBEB", borderRadius: "8px", padding: "12px 16px" }}>
+                        <div style={{ fontSize: "10px", fontFamily: "system-ui, sans-serif", fontWeight: 700, color: term.color, letterSpacing: "1px", textTransform: "uppercase", marginBottom: "5px" }}>
+                          Session {totalDone - i}
+                        </div>
+                        <div style={{ fontSize: "14px", color: "#111", marginBottom: "7px" }}>{d.session_title}</div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
+                          {(d.topics || []).map((t, j) => {
+                            const r = REGIONS.find(r => r.label === t.region);
+                            return (
+                              <div key={j} style={{ fontSize: "12px", color: "#888", fontFamily: "system-ui, sans-serif", display: "flex", gap: "6px", alignItems: "center" }}>
+                                <span style={{ color: r ? r.color : "#CCC" }}>{r ? r.icon : "◉"}</span>
+                                <span>{t.title}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+  </script>
+</body>
+</html>
