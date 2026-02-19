@@ -3,584 +3,619 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>POL 365 · Global Geopolitics</title>
+  <title>POL 365 - Global Geopolitics</title>
   <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body { background: #fff; }
+    body { background: #FAFAFA; font-family: Georgia, serif; }
     button { cursor: pointer; }
+    @media (max-width: 600px) {
+      .day-grid { grid-template-columns: repeat(10, 1fr) !important; }
+    }
   </style>
 </head>
 <body>
   <div id="root"></div>
-
   <script type="text/babel">
     const { useState, useEffect } = React;
 
     const REGIONS = [
-      { id: "mena",   label: "Middle East & N. Africa", icon: "☽", color: "#E8A838" },
-      { id: "usa",    label: "United States",           icon: "★", color: "#3B6FE0" },
-      { id: "europe", label: "Europe",                  icon: "♦", color: "#2E9E6B" },
-      { id: "russia", label: "Russia & Eurasia",        icon: "⬡", color: "#B0454A" },
-      { id: "china",  label: "China & East Asia",       icon: "◉", color: "#C0392B" },
-      { id: "india",  label: "South Asia",              icon: "◈", color: "#E67E22" },
-      { id: "africa", label: "Sub-Saharan Africa",      icon: "✦", color: "#8E44AD" },
-      { id: "latam",  label: "Latin America",           icon: "◆", color: "#16A085" },
-      { id: "seasia", label: "SE Asia & Pacific",       icon: "◇", color: "#1ABC9C" },
+      { id: "mena", label: "Middle East & N. Africa", icon: "\u263D", color: "#E8A838" },
+      { id: "usa", label: "United States", icon: "\u2605", color: "#3B6FE0" },
+      { id: "europe", label: "Europe", icon: "\u2666", color: "#2E9E6B" },
+      { id: "russia", label: "Russia & Eurasia", icon: "\u2B21", color: "#B0454A" },
+      { id: "china", label: "China & East Asia", icon: "\u25C9", color: "#C0392B" },
+      { id: "india", label: "South Asia", icon: "\u25C8", color: "#E67E22" },
+      { id: "africa", label: "Sub-Saharan Africa", icon: "\u2726", color: "#8E44AD" },
+      { id: "latam", label: "Latin America", icon: "\u25C6", color: "#16A085" },
+      { id: "seasia", label: "SE Asia & Pacific", icon: "\u25C7", color: "#1ABC9C" },
+      { id: "global", label: "Global", icon: "\u2637", color: "#555" }
     ];
+
     const TERMS = [
-      { id: "T1", label: "Term I",   title: "State, Empire & the Making of the Modern World", weeks: "Weeks 1-13",  color: "#3B6FE0" },
-      { id: "T2", label: "Term II",  title: "Cold War, Decolonisation & Ideology",            weeks: "Weeks 14-26", color: "#E8A838" },
-      { id: "T3", label: "Term III", title: "Capitalism, Development & Political Economy",    weeks: "Weeks 27-39", color: "#2E9E6B" },
-      { id: "T4", label: "Term IV",  title: "Geopolitics, Democracy & the Current Crisis",   weeks: "Weeks 40-52", color: "#B0454A" },
+      { id: "T1", label: "Term I", title: "State, Empire & the Making of the Modern World", days: "Days 1-10", color: "#3B6FE0", range: [1, 10] },
+      { id: "T2", label: "Term II", title: "Cold War, Decolonisation & Ideology", days: "Days 11-20", color: "#E8A838", range: [11, 20] },
+      { id: "T3", label: "Term III", title: "Capitalism, Development & Political Economy", days: "Days 21-27", color: "#2E9E6B", range: [21, 27] },
+      { id: "T4", label: "Term IV", title: "Geopolitics, Democracy & the Current Crisis", days: "Days 28-30", color: "#B0454A", range: [28, 30] }
     ];
+
     const TYPE_COLOR = {
       "Key Event": "#3B6FE0",
       "Key Actor": "#2E9E6B",
       "Ideology & Theory": "#8E44AD",
       "Case Study": "#E8A838",
-      "Primary Text": "#B0454A",
+      "Primary Text": "#B0454A"
     };
 
-    function getCurrentTerm(n) {
-      if (n <= 91)  return TERMS[0];
-      if (n <= 182) return TERMS[1];
-      if (n <= 273) return TERMS[2];
-      return TERMS[3];
-    }
-    function getDayKey() {
-      const d = new Date();
-      return d.getFullYear() + "-" + d.getMonth() + "-" + d.getDate();
-    }
-    function todayStr() {
-      return new Date().toLocaleDateString("en-GB", {
-        weekday: "long", day: "numeric", month: "long", year: "numeric"
-      });
+    const TOTAL_DAYS = 30;
+
+    function getTermForDay(n) {
+      return TERMS.find(function(t) { return n >= t.range[0] && n <= t.range[1]; }) || TERMS[0];
     }
 
-    // ── STORAGE (localStorage) ────────────────────────────────────────────────
-    function storageGet(key) {
-      try {
-        const v = localStorage.getItem(key);
-        return v ? JSON.parse(v) : null;
-      } catch(e) { return null; }
-    }
-    function storageSet(key, value) {
-      try {
-        localStorage.setItem(key, JSON.stringify(value));
-      } catch(e) {}
+    function findRegion(label) {
+      return REGIONS.find(function(r) { return r.label === label; }) || REGIONS[REGIONS.length - 1];
     }
 
-    // ── JSON PARSER ───────────────────────────────────────────────────────────
-    function safeParseJSON(text) {
-      const start = text.indexOf("{");
-      const end   = text.lastIndexOf("}");
-      if (start === -1 || end === -1) {
-        throw new Error("No JSON found. Response was: " + text.substring(0, 200));
+    function sGet(k) {
+      try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : null; } catch(e) { return null; }
+    }
+    function sSet(k, v) {
+      try { localStorage.setItem(k, JSON.stringify(v)); } catch(e) {}
+    }
+
+    var CURRICULUM = [
+      {
+        session_title: "The Westphalian Order and the Birth of the Modern State",
+        topics: [
+          { region: "Europe", type: "Key Event", title: "The Peace of Westphalia (1648) - sovereignty, territory, and the end of religious war" },
+          { region: "Middle East & N. Africa", type: "Key Event", title: "The decline of Ottoman suzerainty and the emergence of territorial ambition" },
+          { region: "China & East Asia", type: "Ideology & Theory", title: "The Mandate of Heaven vs. Westphalian sovereignty - contrasting legitimacy frameworks" }
+        ],
+        data: { title: "State Formation & War Frequency", source: "Correlates of War Project", description: "State formation dates and interstate war frequency 1648-1900" }
+      },
+      {
+        session_title: "Empire, Extraction, and the Colonial State",
+        topics: [
+          { region: "Sub-Saharan Africa", type: "Key Event", title: "The Berlin Conference (1884-85) - partition, borders, and manufactured states" },
+          { region: "South Asia", type: "Key Event", title: "The East India Company and the privatisation of imperial power" },
+          { region: "Latin America", type: "Ideology & Theory", title: "Creole nationalism and the paradox of elite-led independence" }
+        ],
+        data: { title: "Colonial Resource Extraction", source: "CLIO-Infra Colonial Dependency Dataset", description: "Resource extraction flows 1820-1960" }
+      },
+      {
+        session_title: "Revolution and the Remaking of Political Authority",
+        topics: [
+          { region: "Europe", type: "Key Event", title: "The French Revolution - popular sovereignty and the terror of universal ideals" },
+          { region: "Latin America", type: "Key Event", title: "The Haitian Revolution (1791-1804) - the only successful slave revolt in history" },
+          { region: "Middle East & N. Africa", type: "Key Actor", title: "Napoleon in Egypt - the collision of Enlightenment imperialism and Islamic civilisation" }
+        ],
+        data: { title: "Regime Type Shifts", source: "V-Dem Dataset", description: "Regime type shifts in Europe 1789-1850" }
+      },
+      {
+        session_title: "Nationalism as Political Weapon",
+        topics: [
+          { region: "Europe", type: "Ideology & Theory", title: "Romantic nationalism - Herder, Fichte, and the ethno-linguistic state" },
+          { region: "Middle East & N. Africa", type: "Key Event", title: "Arab nationalism and the Nahda - the 19th century intellectual awakening" },
+          { region: "South Asia", type: "Key Actor", title: "Bal Gangadhar Tilak - Hindu nationalism, mass politics, and anti-colonial mobilisation" }
+        ],
+        data: { title: "Ethnopolitical Power Access", source: "Ethnic Power Relations Dataset", description: "Ethnopolitical group access to state power 1946-2020" }
+      },
+      {
+        session_title: "Industrialisation, Inequality, and the Origins of Geopolitical Competition",
+        topics: [
+          { region: "Europe", type: "Key Event", title: "The Congress of Vienna (1815) - concert diplomacy and the management of great power rivalry" },
+          { region: "United States", type: "Key Event", title: "Manifest Destiny and continental expansion - the Monroe Doctrine as regional hegemony" },
+          { region: "China & East Asia", type: "Key Event", title: "The Opium Wars (1839-1860) - free trade imperialism and the century of humiliation" }
+        ],
+        data: { title: "GDP Per Capita by Region", source: "Maddison Project", description: "GDP per capita by region 1700-1900" }
+      },
+      {
+        session_title: "The Scramble for Resources - Empire in the Industrial Age",
+        topics: [
+          { region: "Sub-Saharan Africa", type: "Case Study", title: "King Leopold's Congo Free State - extraction, atrocity, and the limits of international outrage" },
+          { region: "SE Asia & Pacific", type: "Key Event", title: "The Dutch Cultivation System in Java - colonial agriculture and structural underdevelopment" },
+          { region: "Middle East & N. Africa", type: "Primary Text", title: "Lord Cromer's Modern Egypt (1908) - the imperial administrator as civilisational judge" }
+        ],
+        data: { title: "Colonial Forced Labour", source: "Colonial Forced Labour Database", description: "Corvee and coerced labour regimes 1820-1940" }
+      },
+      {
+        session_title: "War, Collapse, and the End of Empires",
+        topics: [
+          { region: "Europe", type: "Key Event", title: "World War I and the collapse of the Austro-Hungarian, Ottoman, and Russian empires" },
+          { region: "Middle East & N. Africa", type: "Key Event", title: "Sykes-Picot Agreement (1916) - how two diplomats drew the modern Middle East" },
+          { region: "Russia & Eurasia", type: "Key Event", title: "The Bolshevik Revolution (1917) - ideology, collapse, and the birth of the Soviet state" }
+        ],
+        data: { title: "WWI Battle Deaths", source: "Correlates of War", description: "War duration and battle deaths 1914-1918" }
+      },
+      {
+        session_title: "Self-Determination and its Discontents",
+        topics: [
+          { region: "Europe", type: "Key Actor", title: "Woodrow Wilson and the 14 Points - the promise and failure of liberal internationalism" },
+          { region: "Middle East & N. Africa", type: "Key Event", title: "The Balfour Declaration (1917) - competing promises and the roots of the Palestinian question" },
+          { region: "South Asia", type: "Key Actor", title: "Gandhi and non-violent resistance - satyagraha as geopolitical strategy" }
+        ],
+        data: { title: "Non-Self-Governing Territories", source: "UN Decolonisation List", description: "Number of non-self-governing territories 1945-present" }
+      },
+      {
+        session_title: "Fascism, Authoritarianism, and the Interwar Crisis",
+        topics: [
+          { region: "Europe", type: "Ideology & Theory", title: "Fascism as political religion - Mussolini, myth, and the aestheticisation of violence" },
+          { region: "Latin America", type: "Key Event", title: "The rise of Vargas in Brazil (1930) - populism, corporatism, and the Estado Novo" },
+          { region: "China & East Asia", type: "Key Event", title: "Japanese militarism and the invasion of Manchuria (1931) - revisionism in the international order" }
+        ],
+        data: { title: "Interwar Democratic Backsliding", source: "V-Dem Egalitarian Democracy Index", description: "Democratic backsliding in Europe 1920-1939" }
+      },
+      {
+        session_title: "World War II and the New World Order",
+        topics: [
+          { region: "Europe", type: "Key Event", title: "The Holocaust - genocide, state machinery, and the failure of bystander states" },
+          { region: "China & East Asia", type: "Key Event", title: "The Pacific War - imperial Japan, atomic diplomacy, and the postwar settlement" },
+          { region: "United States", type: "Key Event", title: "Bretton Woods (1944) - designing the postwar economic order" }
+        ],
+        data: { title: "WWII Casualties by Theatre", source: "WWII Casualties Dataset", description: "Civilian vs military deaths by theatre 1939-1945" }
+      },
+      {
+        session_title: "The Cold War - Ideology as Geopolitics",
+        topics: [
+          { region: "United States", type: "Ideology & Theory", title: "Containment doctrine - Kennan's Long Telegram and the logic of Soviet encirclement" },
+          { region: "Russia & Eurasia", type: "Ideology & Theory", title: "Soviet Marxism-Leninism - the party, the vanguard, and permanent revolution" },
+          { region: "Europe", type: "Key Event", title: "The Marshall Plan (1948) - economic statecraft as ideological warfare" }
+        ],
+        data: { title: "Superpower Military Spending", source: "SIPRI", description: "US vs USSR military expenditure 1947-1991" }
+      },
+      {
+        session_title: "Decolonisation - Freedom and its Aftermath",
+        topics: [
+          { region: "Sub-Saharan Africa", type: "Key Actor", title: "Kwame Nkrumah - pan-Africanism, socialism, and the betrayal of independence" },
+          { region: "South Asia", type: "Key Event", title: "Partition of India (1947) - the violence of borders and the birth of two states" },
+          { region: "Middle East & N. Africa", type: "Key Event", title: "The Algerian War (1954-1962) - anticolonial insurgency and French imperial decline" }
+        ],
+        data: { title: "Decolonisation Timelines", source: "UN Trust Territories", description: "Decolonisation timelines and independence years by region" }
+      },
+      {
+        session_title: "The Non-Aligned Movement - A Third Way?",
+        topics: [
+          { region: "South Asia", type: "Key Actor", title: "Jawaharlal Nehru - non-alignment as strategic autonomy" },
+          { region: "Latin America", type: "Key Event", title: "The Bandung Conference (1955) - the Global South speaks" },
+          { region: "Middle East & N. Africa", type: "Key Actor", title: "Gamal Abdel Nasser - Arab nationalism, the Suez Crisis, and pan-Arab ambition" }
+        ],
+        data: { title: "NAM vs Cold War Alliances", source: "Non-Aligned Movement Records", description: "NAM membership growth 1955-1979 vs Cold War alliance systems" }
+      },
+      {
+        session_title: "Proxy Wars - The Cold War in the Global South",
+        topics: [
+          { region: "SE Asia & Pacific", type: "Key Event", title: "The Vietnam War - guerrilla warfare, superpower overreach, and the limits of military power" },
+          { region: "Latin America", type: "Key Event", title: "The Cuban Revolution (1959) and the Missile Crisis (1962) - nuclear brinkmanship" },
+          { region: "Sub-Saharan Africa", type: "Case Study", title: "The Angolan Civil War - Cold War proxy conflict, Cuban troops, and South African intervention" }
+        ],
+        data: { title: "Proxy War Fatalities", source: "Uppsala Conflict Data Program", description: "Proxy war fatalities by region 1950-1990" }
+      },
+      {
+        session_title: "Maoism, Cultural Revolution, and Chinese Communism",
+        topics: [
+          { region: "China & East Asia", type: "Key Actor", title: "Mao Zedong - revolutionary strategy, peasant mobilisation, and mass campaigns" },
+          { region: "China & East Asia", type: "Key Event", title: "The Cultural Revolution (1966-1976) - ideology, purge, and institutional destruction" },
+          { region: "SE Asia & Pacific", type: "Case Study", title: "The Khmer Rouge in Cambodia - Maoist agrarianism taken to genocidal extreme" }
+        ],
+        data: { title: "Great Leap Forward Mortality", source: "Demographic Studies", description: "Estimates of famine mortality - demographic consequences of ideology" }
+      },
+      {
+        session_title: "The Middle East Crucible - Oil, War, and Great Powers",
+        topics: [
+          { region: "Middle East & N. Africa", type: "Key Event", title: "The 1973 Oil Embargo - resource nationalism and the weaponisation of energy" },
+          { region: "Middle East & N. Africa", type: "Key Event", title: "The Arab-Israeli Wars (1948-1973) - territory, legitimacy, and superpower involvement" },
+          { region: "United States", type: "Key Actor", title: "Henry Kissinger - realpolitik, shuttle diplomacy, and triangular detente" }
+        ],
+        data: { title: "Oil Price Shocks & GDP", source: "BP Statistical Review", description: "Oil price shocks 1960-1985 and GDP impact on importing nations" }
+      },
+      {
+        session_title: "Latin America - Dependency, Dictators, and the Washington Consensus",
+        topics: [
+          { region: "Latin America", type: "Ideology & Theory", title: "Dependency Theory - Cardoso, Frank, and the structural roots of underdevelopment" },
+          { region: "Latin America", type: "Key Event", title: "Operation Condor - US-backed authoritarian networks and the suppression of the left" },
+          { region: "Latin America", type: "Key Actor", title: "Salvador Allende and the Chilean coup (1973) - democratic socialism vs. imperial intervention" }
+        ],
+        data: { title: "Political Prisoners in Latin America", source: "Amnesty International", description: "Detentions under Latin American military regimes 1960-1990" }
+      },
+      {
+        session_title: "The Islamic Revolution and Political Islam",
+        topics: [
+          { region: "Middle East & N. Africa", type: "Key Event", title: "The Iranian Revolution (1979) - theocracy, anti-imperialism, and the Shia political model" },
+          { region: "Middle East & N. Africa", type: "Ideology & Theory", title: "Political Islam - Qutb, Khomeini, and the rejection of Western secular modernity" },
+          { region: "Russia & Eurasia", type: "Key Event", title: "The Soviet invasion of Afghanistan (1979) - jihad, blowback, and imperial overreach" }
+        ],
+        data: { title: "Muslim-Majority Governance Types", source: "Pew Research", description: "Muslim-majority country governance types 1980-2020" }
+      },
+      {
+        session_title: "The End of the Cold War - Collapse and Transition",
+        topics: [
+          { region: "Russia & Eurasia", type: "Key Event", title: "Gorbachev's reforms - glasnost, perestroika, and the unravelling of the Soviet system" },
+          { region: "Europe", type: "Key Event", title: "The fall of the Berlin Wall (1989) - velvet revolutions and the limits of authoritarian legitimacy" },
+          { region: "China & East Asia", type: "Key Event", title: "Tiananmen Square (1989) - why China's Communist Party survived where the Soviets did not" }
+        ],
+        data: { title: "Global Freedom Scores", source: "Freedom House", description: "Global freedom scores before and after 1989" }
+      },
+      {
+        session_title: "The 1990s - Unipolarity, Optimism, and its Undoing",
+        topics: [
+          { region: "United States", type: "Ideology & Theory", title: "The End of History - Fukuyama's liberal triumphalism and its critics" },
+          { region: "Sub-Saharan Africa", type: "Key Event", title: "The Rwandan Genocide (1994) - ethnic violence, state failure, and international paralysis" },
+          { region: "Europe", type: "Key Event", title: "The dissolution of Yugoslavia - nationalism, ethnic cleansing, and humanitarian intervention" }
+        ],
+        data: { title: "FDI to Developing Countries", source: "World Bank", description: "Foreign direct investment flows to developing countries 1990-2000" }
+      },
+      {
+        session_title: "Capitalism and Development - Models and Myths",
+        topics: [
+          { region: "China & East Asia", type: "Case Study", title: "The East Asian developmental state - South Korea, Taiwan, and state-directed capitalism" },
+          { region: "Latin America", type: "Key Event", title: "The Washington Consensus - IMF structural adjustment and its social costs" },
+          { region: "Sub-Saharan Africa", type: "Key Event", title: "Structural Adjustment in sub-Saharan Africa - privatisation, austerity, and governance failure" }
+        ],
+        data: { title: "Growth vs Inequality", source: "World Bank", description: "GDP growth vs Gini coefficient across development model types 1980-2010" }
+      },
+      {
+        session_title: "China's Economic Rise - From Reform to Dominance",
+        topics: [
+          { region: "China & East Asia", type: "Key Event", title: "Deng Xiaoping's reforms (1978) - socialism with Chinese characteristics" },
+          { region: "China & East Asia", type: "Key Actor", title: "Zhu Rongji and WTO accession (2001) - integrating China into the liberal order" },
+          { region: "SE Asia & Pacific", type: "Case Study", title: "The Asian Financial Crisis (1997) - capital flows, contagion, and the IMF's legitimacy problem" }
+        ],
+        data: { title: "China's Manufacturing Share", source: "World Bank", description: "China's share of global manufacturing output 1978-2023" }
+      },
+      {
+        session_title: "Oil, Resource Curse, and Petrostates",
+        topics: [
+          { region: "Middle East & N. Africa", type: "Ideology & Theory", title: "The resource curse - why oil wealth undermines democracy and diversification" },
+          { region: "Russia & Eurasia", type: "Key Actor", title: "Vladimir Putin - energy statecraft, rents, and the authoritarian bargain" },
+          { region: "Sub-Saharan Africa", type: "Case Study", title: "Nigeria's oil economy - the paradox of plenty and the failure of the developmental state" }
+        ],
+        data: { title: "Resource Governance", source: "NRGI Resource Governance Index", description: "Transparency and accountability in extractive industries" }
+      },
+      {
+        session_title: "Globalisation - Winners, Losers, and the Political Backlash",
+        topics: [
+          { region: "United States", type: "Key Event", title: "NAFTA and deindustrialisation - free trade, manufacturing decline, and political polarisation" },
+          { region: "Europe", type: "Key Event", title: "EU enlargement and the single market - integration, labour mobility, and sovereignty tensions" },
+          { region: "South Asia", type: "Case Study", title: "India's IT boom - services-led growth, inequality, and the limits of trickle-down" }
+        ],
+        data: { title: "Trade Openness vs Inequality", source: "IMF", description: "Trade openness index vs income inequality (Gini) by country 1990-2020" }
+      },
+      {
+        session_title: "War on Terror - Security, Sovereignty, and Blowback",
+        topics: [
+          { region: "United States", type: "Key Event", title: "9/11 and the Global War on Terror - the securitisation of foreign policy" },
+          { region: "Middle East & N. Africa", type: "Key Event", title: "The Iraq War (2003) - WMD, regime change, and the unravelling of the regional order" },
+          { region: "South Asia", type: "Case Study", title: "Pakistan and the Taliban - the double game, strategic depth, and nuclear risk" }
+        ],
+        data: { title: "Post-9/11 War Costs", source: "Costs of War Project (Brown University)", description: "Financial and human costs of post-9/11 wars" }
+      },
+      {
+        session_title: "The Arab Spring - Revolution, Counter-Revolution, and State Fragility",
+        topics: [
+          { region: "Middle East & N. Africa", type: "Key Event", title: "Tunisia's Jasmine Revolution - the one Arab Spring success and why it matters" },
+          { region: "Middle East & N. Africa", type: "Case Study", title: "Syria's civil war - sectarianism, proxy powers, and humanitarian catastrophe" },
+          { region: "Russia & Eurasia", type: "Key Actor", title: "Russia's return to the Middle East - Syrian intervention and great power rebalancing" }
+        ],
+        data: { title: "Syrian Refugee Flows", source: "UNHCR", description: "Syrian refugee flows 2011-2023 and host country burden" }
+      },
+      {
+        session_title: "Rising Powers and the Challenge to Liberal Order",
+        topics: [
+          { region: "China & East Asia", type: "Ideology & Theory", title: "The Beijing Consensus - Chinese development model as alternative to liberal democracy" },
+          { region: "Russia & Eurasia", type: "Key Event", title: "The annexation of Crimea (2014) - revisionism, frozen conflicts, and European security" },
+          { region: "South Asia", type: "Key Actor", title: "Narendra Modi - Hindu nationalism, civilisational state, and India's strategic pivot" }
+        ],
+        data: { title: "Asian Power Distribution", source: "Lowy Institute Asia Power Index", description: "Shifting power distribution in Asia 2018-2024" }
+      },
+      {
+        session_title: "Democracy in Crisis - Populism and Democratic Backsliding",
+        topics: [
+          { region: "Europe", type: "Key Event", title: "Brexit - sovereignty, identity, and the fracturing of the European project" },
+          { region: "United States", type: "Key Actor", title: "Trump's presidency - illiberal democracy, institutional stress-testing, and alliance disruption" },
+          { region: "Latin America", type: "Case Study", title: "Venezuela under Maduro - petro-populism, institutional collapse, and humanitarian crisis" }
+        ],
+        data: { title: "Global Democratic Backsliding", source: "V-Dem Liberal Democracy Index", description: "Democratic backsliding by country 2010-2024" }
+      },
+      {
+        session_title: "China vs USA - The New Cold War",
+        topics: [
+          { region: "China & East Asia", type: "Key Event", title: "The Belt and Road Initiative - infrastructure diplomacy and debt-trap debates" },
+          { region: "United States", type: "Ideology & Theory", title: "The Indo-Pacific strategy - containment reimagined for the 21st century" },
+          { region: "SE Asia & Pacific", type: "Case Study", title: "The South China Sea disputes - maritime law, artificial islands, and ASEAN's limits" }
+        ],
+        data: { title: "Development Finance Flows", source: "AidData", description: "Chinese development finance vs World Bank lending by region 2000-2021" }
+      },
+      {
+        session_title: "Climate, Migration, and the Future of Geopolitics",
+        topics: [
+          { region: "South Asia", type: "Ideology & Theory", title: "Climate security - how environmental stress multiplies conflict risk" },
+          { region: "Sub-Saharan Africa", type: "Case Study", title: "The Sahel crisis - climate, jihadism, coups, and the collapse of French influence" },
+          { region: "Europe", type: "Key Event", title: "The 2015 refugee crisis - migration, solidarity, and the politics of the border" }
+        ],
+        data: { title: "Climate Vulnerability vs GDP", source: "Notre Dame Global Adaptation Initiative", description: "Climate vulnerability index by country vs GDP" }
       }
-      let s = text.substring(start, end + 1)
-        .replace(/[\u2018\u2019\u02BC]/g, "'")
-        .replace(/[\u201C\u201D\u00AB\u00BB]/g, '"')
-        .replace(/[\u2013\u2014\u2212]/g, "-")
-        .replace(/\u2026/g, "...");
-      let out = "", inStr = false, esc = false;
-      for (let i = 0; i < s.length; i++) {
-        const c = s[i];
-        if (esc)        { out += c; esc = false; continue; }
-        if (c === "\\") { out += c; esc = true;  continue; }
-        if (c === '"')  { inStr = !inStr; out += c; continue; }
-        if (inStr) {
-          if (c === "\n") { out += "\\n"; continue; }
-          if (c === "\r") { out += "\\r"; continue; }
-          if (c === "\t") { out += "\\t"; continue; }
-          if (c === "\f") { out += "\\f"; continue; }
-          if (c === "\b") { out += "\\b"; continue; }
-        }
-        out += c;
-      }
-      try {
-        return JSON.parse(out);
-      } catch(err) {
-        throw new Error("JSON.parse failed: " + err.message + ". Snippet: " + out.substring(0, 300));
-      }
+    ];
+
+    function Tag(props) {
+      var c = props.color || "#888";
+      return React.createElement("span", { style: {
+        display: "inline-block", fontSize: "10px", fontWeight: 600,
+        letterSpacing: "0.5px", textTransform: "uppercase",
+        color: c, background: c + "18", border: "1px solid " + c + "44",
+        padding: "2px 8px", borderRadius: "4px", fontFamily: "system-ui, sans-serif"
+      }}, props.label);
     }
 
-    // ── API ───────────────────────────────────────────────────────────────────
-    async function callClaude(prompt, apiKey) {
-      const resp = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-api-key": apiKey,
-          "anthropic-version": "2023-06-01",
-          "anthropic-dangerous-direct-browser-access": "true",
-        },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-5",
-          max_tokens: 2000,
-          messages: [{ role: "user", content: prompt }]
-        })
-      });
-      const data = await resp.json();
-      if (data.error) throw new Error("API error: " + data.error.message);
-      const text = (data.content || [])
-        .filter(b => b.type === "text")
-        .map(b => b.text)
-        .join("");
-      return safeParseJSON(text);
-    }
-
-    // ── PROMPT ────────────────────────────────────────────────────────────────
-    function buildPrompt(term, dayNum, recent) {
-      return [
-        "You are a geopolitics professor building a 365-day curriculum on world politics.",
-        "Day: " + dayNum + " of 365. Term: " + term.title + " (" + term.weeks + ").",
-        "Recent topics covered: " + (recent || "None - this is Day 1."),
-        "",
-        "Choose 3 thematically linked topics from DIFFERENT world regions. Be very specific.",
-        "Focus on power, statecraft, ideology, conflict, and political economy.",
-        "",
-        "CRITICAL: Return ONLY a raw JSON object. No markdown. No explanation. No backticks.",
-        "Your response must start with { and end with }.",
-        "Every string value must be on a single line with no line breaks inside it.",
-        "",
-        '{',
-        '  "session_title": "The title of this seminar session",',
-        '  "abstract": "Two sentences framing the intellectual argument. Keep on one line.",',
-        '  "objectives": ["First learning objective", "Second learning objective", "Third learning objective"],',
-        '  "topics": [',
-        '    { "title": "Specific topic name", "region": "Europe", "type": "Key Event", "argument": "Core argument in one line.", "figures": ["Person A", "Person B"], "question": "Seminar question?", "reading": "Author, Title, Year" },',
-        '    { "title": "Specific topic name", "region": "China & East Asia", "type": "Key Actor", "argument": "Core argument in one line.", "figures": ["Person A"], "question": "Seminar question?", "reading": "Author, Title, Year" },',
-        '    { "title": "Specific topic name", "region": "Latin America", "type": "Case Study", "argument": "Core argument in one line.", "figures": ["Person A"], "question": "Seminar question?", "reading": "Author, Title, Year" }',
-        '  ],',
-        '  "data": { "title": "Data module title", "why": "Why this data matters politically.", "source": "SIPRI Military Expenditure Database", "question": "What political question does this illuminate?", "compare": ["Region A", "Region B", "Region C"] },',
-        '  "thread": "One sentence connecting today to the term theme.",',
-        '  "tomorrow": "One line teaser for the next session."',
-        '}',
-        "",
-        "Valid regions: Middle East & N. Africa, United States, Europe, Russia & Eurasia, China & East Asia, South Asia, Sub-Saharan Africa, Latin America, SE Asia & Pacific, Global/Comparative",
-        "Valid types: Key Event, Key Actor, Ideology & Theory, Case Study, Primary Text",
-      ].join("\n");
-    }
-
-    // ── COMPONENTS ────────────────────────────────────────────────────────────
-    function Tag({ label, color }) {
-      const c = color || "#888";
-      return (
-        <span style={{
-          display: "inline-block", fontSize: "10px", fontWeight: 600,
-          letterSpacing: "0.5px", textTransform: "uppercase",
-          color: c, background: c + "18", border: "1px solid " + c + "44",
-          padding: "2px 8px", borderRadius: "4px", fontFamily: "system-ui, sans-serif"
-        }}>{label}</span>
+    function TopicCard(props) {
+      var topic = props.topic;
+      var n = props.n;
+      var tc = TYPE_COLOR[topic.type] || "#888";
+      var reg = findRegion(topic.region);
+      return React.createElement("div", { style: { border: "1px solid #EBEBEB", borderRadius: "10px", overflow: "hidden", marginBottom: "10px", background: "#fff" }},
+        React.createElement("div", { style: { padding: "16px 20px", display: "flex", gap: "14px", alignItems: "flex-start", borderLeft: "4px solid " + tc }},
+          React.createElement("div", { style: { fontSize: "20px", lineHeight: 1, marginTop: "3px", color: reg.color }}, reg.icon),
+          React.createElement("div", { style: { flex: 1 }},
+            React.createElement("div", { style: { display: "flex", gap: "6px", flexWrap: "wrap", marginBottom: "6px" }},
+              React.createElement(Tag, { label: topic.type, color: tc }),
+              React.createElement(Tag, { label: topic.region, color: reg.color })
+            ),
+            React.createElement("div", { style: { fontSize: "15px", fontWeight: 600, color: "#1A1A1A", lineHeight: 1.5 }}, n + ". " + topic.title)
+          )
+        )
       );
     }
 
-    function TopicCard({ topic, n, termColor }) {
-      const [open, setOpen] = useState(false);
-      const tc  = TYPE_COLOR[topic.type] || "#888";
-      const reg = REGIONS.find(r => r.label === topic.region);
-      return (
-        <div style={{ border: "1px solid #EBEBEB", borderRadius: "10px", overflow: "hidden", marginBottom: "10px" }}>
-          <div
-            onClick={() => setOpen(o => !o)}
-            style={{ padding: "16px 20px", cursor: "pointer", display: "flex", gap: "14px", alignItems: "flex-start", borderLeft: "4px solid " + tc, background: "#fff" }}
-          >
-            <div style={{ fontSize: "20px", lineHeight: 1, marginTop: "3px", color: reg ? reg.color : "#888" }}>{reg ? reg.icon : "◉"}</div>
-            <div style={{ flex: 1 }}>
-              <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginBottom: "6px" }}>
-                <Tag label={topic.type} color={tc} />
-                <Tag label={topic.region} color={reg ? reg.color : "#888"} />
-              </div>
-              <div style={{ fontSize: "15px", fontWeight: 600, color: "#1A1A1A", lineHeight: 1.4 }}>{n}. {topic.title}</div>
-            </div>
-            <div style={{ fontSize: "18px", color: "#CCC", flexShrink: 0 }}>{open ? "−" : "+"}</div>
-          </div>
-          {open && (
-            <div style={{ padding: "16px 20px 20px", borderTop: "1px solid #F0F0F0", background: "#FAFAFA" }}>
-              <p style={{ fontSize: "13px", color: "#444", lineHeight: 1.75, marginBottom: "14px", fontStyle: "italic" }}>{topic.argument}</p>
-              {topic.figures && topic.figures.length > 0 && (
-                <div style={{ marginBottom: "12px" }}>
-                  <div style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "1px", textTransform: "uppercase", color: "#AAA", marginBottom: "6px", fontFamily: "system-ui, sans-serif" }}>Key Figures</div>
-                  <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
-                    {topic.figures.map((f, i) => (
-                      <span key={i} style={{ fontSize: "12px", background: "#EFEFEF", color: "#333", padding: "3px 10px", borderRadius: "20px", fontFamily: "system-ui, sans-serif" }}>{f}</span>
-                    ))}
-                  </div>
-                </div>
-              )}
-              <div style={{ background: "#fff", borderLeft: "3px solid " + termColor, border: "1px solid " + termColor + "33", borderRadius: "0 6px 6px 0", padding: "10px 14px", marginBottom: "12px" }}>
-                <div style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "1px", textTransform: "uppercase", color: "#AAA", marginBottom: "4px", fontFamily: "system-ui, sans-serif" }}>Seminar Question</div>
-                <div style={{ fontSize: "13px", color: "#222", fontStyle: "italic", lineHeight: 1.6 }}>"{topic.question}"</div>
-              </div>
-              {topic.reading && (
-                <div style={{ fontSize: "12px", color: "#666", fontFamily: "system-ui, sans-serif" }}>
-                  <strong>Reading: </strong><em>{topic.reading}</em>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      );
-    }
-
-    function DataCard({ data }) {
+    function DataCard(props) {
+      var data = props.data;
       if (!data) return null;
-      return (
-        <div style={{ border: "1px solid #EBEBEB", borderRadius: "10px", overflow: "hidden" }}>
-          <div style={{ background: "#F7FFF9", borderBottom: "1px solid #D0EDD8", padding: "14px 20px", borderLeft: "4px solid #2E9E6B" }}>
-            <div style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "1px", textTransform: "uppercase", color: "#2E9E6B", marginBottom: "4px", fontFamily: "system-ui, sans-serif" }}>Data & Evidence</div>
-            <div style={{ fontSize: "15px", fontWeight: 600, color: "#1A1A1A" }}>{data.title}</div>
-          </div>
-          <div style={{ padding: "16px 20px", background: "#fff" }}>
-            <p style={{ fontSize: "13px", color: "#444", lineHeight: 1.7, marginBottom: "14px", fontFamily: "system-ui, sans-serif" }}>{data.why}</p>
-            <div style={{ background: "#F7F7F7", border: "1px solid #E8E8E8", borderRadius: "6px", padding: "10px 14px", marginBottom: "12px" }}>
-              <div style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "1px", textTransform: "uppercase", color: "#AAA", marginBottom: "4px", fontFamily: "system-ui, sans-serif" }}>Dataset</div>
-              <div style={{ fontSize: "13px", fontWeight: 600, color: "#222", fontFamily: "system-ui, sans-serif" }}>{data.source}</div>
-            </div>
-            <div style={{ background: "#FFFDF0", borderLeft: "3px solid #E8A838", border: "1px solid #EEE0A0", borderRadius: "0 6px 6px 0", padding: "10px 14px", marginBottom: "14px" }}>
-              <div style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "1px", textTransform: "uppercase", color: "#AAA", marginBottom: "4px", fontFamily: "system-ui, sans-serif" }}>Analytical Question</div>
-              <div style={{ fontSize: "13px", color: "#333", fontStyle: "italic" }}>{data.question}</div>
-            </div>
-            {data.compare && data.compare.length > 0 && (
-              <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
-                {data.compare.map((c, i) => {
-                  const r = REGIONS.find(r => r.label === c || r.id === c);
-                  return <Tag key={i} label={c} color={r ? r.color : "#888"} />;
-                })}
-              </div>
-            )}
-          </div>
-        </div>
+      return React.createElement("div", { style: { border: "1px solid #EBEBEB", borderRadius: "10px", overflow: "hidden", background: "#fff" }},
+        React.createElement("div", { style: { background: "#F7FFF9", borderBottom: "1px solid #D0EDD8", padding: "14px 20px", borderLeft: "4px solid #2E9E6B" }},
+          React.createElement("div", { style: { fontSize: "10px", fontWeight: 700, letterSpacing: "1px", textTransform: "uppercase", color: "#2E9E6B", marginBottom: "4px", fontFamily: "system-ui, sans-serif" }}, "Data & Evidence"),
+          React.createElement("div", { style: { fontSize: "15px", fontWeight: 600, color: "#1A1A1A" }}, data.title)
+        ),
+        React.createElement("div", { style: { padding: "16px 20px" }},
+          React.createElement("div", { style: { background: "#F7F7F7", border: "1px solid #E8E8E8", borderRadius: "6px", padding: "10px 14px", marginBottom: "10px" }},
+            React.createElement("div", { style: { fontSize: "10px", fontWeight: 700, letterSpacing: "1px", textTransform: "uppercase", color: "#AAA", marginBottom: "4px", fontFamily: "system-ui, sans-serif" }}, "Dataset"),
+            React.createElement("div", { style: { fontSize: "13px", fontWeight: 600, color: "#222", fontFamily: "system-ui, sans-serif" }}, data.source)
+          ),
+          React.createElement("div", { style: { fontSize: "13px", color: "#555", lineHeight: 1.7, fontFamily: "system-ui, sans-serif" }}, data.description)
+        )
       );
     }
 
-    // ── API KEY GATE ──────────────────────────────────────────────────────────
-    function ApiKeyGate({ onSave }) {
-      const [val, setVal] = useState("");
-      return (
-        <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#fff", fontFamily: "system-ui, sans-serif", padding: "20px" }}>
-          <div style={{ maxWidth: "440px", width: "100%", textAlign: "center" }}>
-            <div style={{ fontSize: "28px", marginBottom: "12px" }}>🎓</div>
-            <div style={{ fontSize: "20px", fontFamily: "Georgia, serif", color: "#111", marginBottom: "8px" }}>POL 365 · Global Geopolitics</div>
-            <p style={{ fontSize: "13px", color: "#888", lineHeight: 1.7, marginBottom: "24px" }}>
-              This app uses the Anthropic API to generate daily sessions. Enter your API key below — it will be saved only in your browser's local storage and never sent anywhere except Anthropic.
-            </p>
-            <input
-              type="password"
-              placeholder="sk-ant-..."
-              value={val}
-              onChange={e => setVal(e.target.value)}
-              onKeyDown={e => e.key === "Enter" && val.startsWith("sk-") && onSave(val)}
-              style={{ width: "100%", padding: "11px 14px", border: "1px solid #DDD", borderRadius: "8px", fontSize: "14px", marginBottom: "12px", outline: "none", fontFamily: "monospace" }}
-            />
-            <button
-              onClick={() => onSave(val)}
-              disabled={!val.startsWith("sk-")}
-              style={{ width: "100%", background: val.startsWith("sk-") ? "#3B6FE0" : "#EEE", color: val.startsWith("sk-") ? "#fff" : "#AAA", border: "none", padding: "12px", borderRadius: "8px", fontSize: "14px", fontWeight: 600, cursor: val.startsWith("sk-") ? "pointer" : "default" }}
-            >
-              Save & Continue
-            </button>
-            <p style={{ fontSize: "11px", color: "#CCC", marginTop: "12px" }}>
-              Get an API key at <a href="https://console.anthropic.com" target="_blank" rel="noreferrer" style={{ color: "#3B6FE0" }}>console.anthropic.com</a>
-            </p>
-          </div>
-        </div>
-      );
-    }
-
-    // ── APP ───────────────────────────────────────────────────────────────────
     function App() {
-      const [apiKey,  setApiKey]  = useState(() => storageGet("polcourse_apikey") || "");
-      const [history, setHistory] = useState({});
-      const [session, setSession] = useState(null);
-      const [loading, setLoading] = useState(false);
-      const [error,   setError]   = useState("");
-      const [view,    setView]    = useState("today");
-      const [ready,   setReady]   = useState(false);
+      var dayState = useState(function() { return sGet("pol365_day") || 1; });
+      var currentDay = dayState[0];
+      var setCurrentDay = dayState[1];
 
-      const todayKey  = getDayKey();
-      const totalDone = Object.keys(history).length;
-      const dayNum    = session ? totalDone : totalDone + 1;
-      const term      = getCurrentTerm(dayNum);
-      const pct       = Math.min(100, Math.round((totalDone / 365) * 100));
+      var doneState = useState(function() { return sGet("pol365_done") || []; });
+      var completed = doneState[0];
+      var setCompleted = doneState[1];
 
-      useEffect(() => {
-        const h = storageGet("polcourse_v8");
-        if (h) {
-          setHistory(h);
-          if (h[todayKey]) setSession(h[todayKey]);
+      var viewState = useState("today");
+      var view = viewState[0];
+      var setView = viewState[1];
+
+      useEffect(function() { sSet("pol365_day", currentDay); }, [currentDay]);
+      useEffect(function() { sSet("pol365_done", completed); }, [completed]);
+
+      var session = CURRICULUM[currentDay - 1];
+      var term = getTermForDay(currentDay);
+      var pct = Math.round((completed.length / TOTAL_DAYS) * 100);
+      var isDone = completed.indexOf(currentDay) !== -1;
+
+      function markComplete() {
+        if (!isDone) {
+          setCompleted(completed.concat([currentDay]));
         }
-        setReady(true);
-      }, []);
-
-      function saveApiKey(key) {
-        storageSet("polcourse_apikey", key);
-        setApiKey(key);
+        if (currentDay < TOTAL_DAYS) setCurrentDay(currentDay + 1);
       }
 
-      async function generate() {
-        setLoading(true);
-        setError("");
-        try {
-          const recent = Object.values(history)
-            .slice(-5)
-            .flatMap(d => (d.topics || []).map(t => t.title))
-            .join(", ");
-          const sess = await callClaude(buildPrompt(term, dayNum, recent), apiKey);
-          const newH = { ...history, [todayKey]: sess };
-          setSession(sess);
-          setHistory(newH);
-          storageSet("polcourse_v8", newH);
-        } catch(e) {
-          setError(e.message || "Generation failed. Please try again.");
-        }
-        setLoading(false);
-      }
+      function goTo(d) { setCurrentDay(d); setView("today"); }
 
       function resetAll() {
         if (!window.confirm("Reset all progress?")) return;
-        setHistory({});
-        setSession(null);
-        storageSet("polcourse_v8", {});
+        setCompleted([]);
+        setCurrentDay(1);
       }
 
-      function clearApiKey() {
-        if (!window.confirm("Change API key? You'll be asked to enter a new one.")) return;
-        storageSet("polcourse_apikey", "");
-        setApiKey("");
-      }
-
-      if (!apiKey) return <ApiKeyGate onSave={saveApiKey} />;
-
-      if (!ready) return (
-        <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "system-ui, sans-serif", color: "#CCC" }}>
-          Loading...
-        </div>
+      /* ---- HEADER ---- */
+      var header = React.createElement("div", { style: { borderBottom: "1px solid #EBEBEB", padding: "24px 28px 0", position: "sticky", top: 0, background: "#fff", zIndex: 10 }},
+        React.createElement("div", { style: { maxWidth: "780px", margin: "0 auto" }},
+          React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px" }},
+            React.createElement("div", null,
+              React.createElement("div", { style: { fontSize: "10px", fontFamily: "system-ui, sans-serif", fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", color: "#BBB", marginBottom: "5px" }}, "POL 365 \u00B7 Global Geopolitics"),
+              React.createElement("div", { style: { fontSize: "22px", color: "#111" }}, "The Grand Curriculum")
+            ),
+            React.createElement("div", { style: { textAlign: "right" }},
+              React.createElement("div", { style: { fontSize: "9px", fontFamily: "system-ui, sans-serif", fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", color: "#BBB" }}, "Day"),
+              React.createElement("div", { style: { fontSize: "32px", fontWeight: 800, color: term.color, lineHeight: 1, fontFamily: "system-ui, sans-serif" }}, currentDay),
+              React.createElement("div", { style: { fontSize: "10px", color: "#CCC", fontFamily: "system-ui, sans-serif" }}, "of " + TOTAL_DAYS)
+            )
+          ),
+          /* Term pills */
+          React.createElement("div", { style: { display: "flex", gap: "5px", marginBottom: "12px", flexWrap: "wrap" }},
+            TERMS.map(function(t) {
+              return React.createElement("div", { key: t.id, style: {
+                padding: "4px 12px", borderRadius: "20px", fontSize: "10px",
+                fontFamily: "system-ui, sans-serif", fontWeight: 600,
+                background: t.id === term.id ? t.color : "transparent",
+                color: t.id === term.id ? "#fff" : "#CCC",
+                border: "1.5px solid " + (t.id === term.id ? t.color : "#E8E8E8")
+              }}, t.label);
+            })
+          ),
+          /* Progress bar */
+          React.createElement("div", { style: { height: "3px", background: "#F0F0F0", borderRadius: "2px" }},
+            React.createElement("div", { style: { height: "100%", width: pct + "%", background: term.color, borderRadius: "2px", transition: "width 0.5s" }})
+          ),
+          /* Tabs */
+          React.createElement("div", { style: { display: "flex" }},
+            [["today", "Session"], ["syllabus", "Syllabus"], ["archive", "All Days"]].map(function(pair) {
+              return React.createElement("button", { key: pair[0], onClick: function() { setView(pair[0]); }, style: {
+                background: "none", border: "none",
+                borderBottom: view === pair[0] ? "3px solid " + term.color : "3px solid transparent",
+                color: view === pair[0] ? term.color : "#BBB",
+                fontFamily: "system-ui, sans-serif", fontWeight: 600, fontSize: "11px",
+                padding: "12px 16px 10px", cursor: "pointer", marginBottom: "-1px"
+              }}, pair[1]);
+            })
+          )
+        )
       );
 
-      return (
-        <div style={{ minHeight: "100vh", background: "#fff", color: "#1A1A1A", fontFamily: "Georgia, serif" }}>
-          {/* HEADER */}
-          <div style={{ borderBottom: "1px solid #EBEBEB", padding: "24px 28px 0", position: "sticky", top: 0, background: "#fff", zIndex: 10 }}>
-            <div style={{ maxWidth: "780px", margin: "0 auto" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px" }}>
-                <div>
-                  <div style={{ fontSize: "10px", fontFamily: "system-ui, sans-serif", fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", color: "#BBB", marginBottom: "5px" }}>
-                    POL 365 · Global Geopolitics
-                  </div>
-                  <div style={{ fontSize: "22px", color: "#111" }}>The Grand Curriculum</div>
-                </div>
-                <div style={{ textAlign: "right", display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "6px" }}>
-                  <div>
-                    <div style={{ fontSize: "9px", fontFamily: "system-ui, sans-serif", fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", color: "#BBB" }}>Day</div>
-                    <div style={{ fontSize: "32px", fontWeight: 800, color: term.color, lineHeight: 1, fontFamily: "system-ui, sans-serif" }}>{totalDone}</div>
-                    <div style={{ fontSize: "10px", color: "#CCC", fontFamily: "system-ui, sans-serif" }}>of 365</div>
-                  </div>
-                  <button onClick={clearApiKey} style={{ background: "none", border: "1px solid #E8E8E8", color: "#BBB", padding: "4px 10px", borderRadius: "5px", fontSize: "10px", fontFamily: "system-ui, sans-serif", cursor: "pointer" }}>
-                    Change API Key
-                  </button>
-                </div>
-              </div>
-              {/* Term pills */}
-              <div style={{ display: "flex", gap: "5px", marginBottom: "12px", flexWrap: "wrap" }}>
-                {TERMS.map(t => (
-                  <div key={t.id} style={{
-                    padding: "4px 12px", borderRadius: "20px", fontSize: "10px",
-                    fontFamily: "system-ui, sans-serif", fontWeight: 600,
-                    background: t.id === term.id ? t.color : "transparent",
-                    color: t.id === term.id ? "#fff" : "#CCC",
-                    border: "1.5px solid " + (t.id === term.id ? t.color : "#E8E8E8"),
-                  }}>{t.label}</div>
-                ))}
-              </div>
-              {/* Progress bar */}
-              <div style={{ height: "3px", background: "#F0F0F0", borderRadius: "2px" }}>
-                <div style={{ height: "100%", width: pct + "%", background: term.color, borderRadius: "2px", transition: "width 0.5s" }} />
-              </div>
-              {/* Tabs */}
-              <div style={{ display: "flex" }}>
-                {[["today", "Today's Session"], ["syllabus", "Syllabus"], ["archive", "Archive"]].map(([id, label]) => (
-                  <button key={id} onClick={() => setView(id)} style={{
-                    background: "none", border: "none",
-                    borderBottom: view === id ? "3px solid " + term.color : "3px solid transparent",
-                    color: view === id ? term.color : "#BBB",
-                    fontFamily: "system-ui, sans-serif", fontWeight: 600, fontSize: "11px",
-                    padding: "12px 16px 10px", cursor: "pointer", marginBottom: "-1px",
-                  }}>{label}</button>
-                ))}
-              </div>
-            </div>
-          </div>
+      /* ---- SESSION VIEW ---- */
+      var sessionView = !session ? null : React.createElement("div", null,
+        React.createElement("div", { style: { borderLeft: "4px solid " + term.color, paddingLeft: "18px", marginBottom: "24px" }},
+          React.createElement("div", { style: { fontSize: "10px", fontFamily: "system-ui, sans-serif", fontWeight: 700, color: term.color, letterSpacing: "1px", textTransform: "uppercase", marginBottom: "5px" }}, term.label + " \u00B7 Day " + currentDay + " of " + TOTAL_DAYS),
+          React.createElement("div", { style: { fontSize: "21px", color: "#111", lineHeight: 1.3, marginBottom: "10px" }}, session.session_title),
+          isDone ? React.createElement(Tag, { label: "Completed", color: "#2E9E6B" }) : null
+        ),
+        React.createElement("div", { style: { fontSize: "10px", fontFamily: "system-ui, sans-serif", fontWeight: 700, letterSpacing: "1.5px", textTransform: "uppercase", color: "#CCC", marginBottom: "10px" }}, "Three Topics"),
+        session.topics.map(function(t, i) {
+          return React.createElement(TopicCard, { key: i, topic: t, n: i + 1, termColor: term.color });
+        }),
+        React.createElement("div", { style: { margin: "22px 0 10px", fontSize: "10px", fontFamily: "system-ui, sans-serif", fontWeight: 700, letterSpacing: "1.5px", textTransform: "uppercase", color: "#CCC" }}, "Data Module"),
+        React.createElement(DataCard, { data: session.data }),
+        /* Navigation */
+        React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "28px", gap: "12px" }},
+          React.createElement("button", {
+            onClick: function() { if (currentDay > 1) setCurrentDay(currentDay - 1); },
+            disabled: currentDay <= 1,
+            style: { background: "#fff", border: "1px solid #EBEBEB", color: currentDay > 1 ? "#555" : "#DDD", padding: "10px 18px", borderRadius: "8px", fontSize: "13px", fontWeight: 600, fontFamily: "system-ui, sans-serif", cursor: currentDay > 1 ? "pointer" : "default" }
+          }, "\u2190 Prev"),
+          React.createElement("button", {
+            onClick: markComplete,
+            style: { background: isDone ? "#F0F0F0" : term.color, color: isDone ? "#999" : "#fff", border: "none", padding: "12px 28px", borderRadius: "8px", fontSize: "14px", fontWeight: 600, fontFamily: "system-ui, sans-serif", cursor: "pointer" }
+          }, isDone ? (currentDay < TOTAL_DAYS ? "Next Day \u2192" : "All Complete") : "Mark Complete & Continue"),
+          React.createElement("button", {
+            onClick: function() { if (currentDay < TOTAL_DAYS) setCurrentDay(currentDay + 1); },
+            disabled: currentDay >= TOTAL_DAYS,
+            style: { background: "#fff", border: "1px solid #EBEBEB", color: currentDay < TOTAL_DAYS ? "#555" : "#DDD", padding: "10px 18px", borderRadius: "8px", fontSize: "13px", fontWeight: 600, fontFamily: "system-ui, sans-serif", cursor: currentDay < TOTAL_DAYS ? "pointer" : "default" }
+          }, "Next \u2192")
+        )
+      );
 
-          {/* CONTENT */}
-          <div style={{ maxWidth: "780px", margin: "0 auto", padding: "28px 28px 80px" }}>
+      /* ---- SYLLABUS VIEW ---- */
+      var syllabusView = React.createElement("div", null,
+        React.createElement("div", { style: { marginBottom: "24px" }},
+          React.createElement("div", { style: { fontSize: "20px", marginBottom: "8px" }}, "Course Syllabus"),
+          React.createElement("p", { style: { fontSize: "13px", color: "#555", lineHeight: 1.75, fontFamily: "system-ui, sans-serif", maxWidth: "580px" }}, "A 30-day geopolitics curriculum spanning every major world region. Each daily session delivers three thematically linked topics and a quantitative data module.")
+        ),
+        React.createElement("div", { style: { fontSize: "10px", fontFamily: "system-ui, sans-serif", fontWeight: 700, letterSpacing: "1.5px", textTransform: "uppercase", color: "#CCC", marginBottom: "10px" }}, "Four Terms"),
+        React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: "8px", marginBottom: "28px" }},
+          TERMS.map(function(t) {
+            return React.createElement("div", { key: t.id, style: { border: "1px solid " + (t.id === term.id ? t.color + "44" : "#EBEBEB"), borderLeft: "4px solid " + t.color, borderRadius: "0 8px 8px 0", padding: "12px 16px", background: t.id === term.id ? t.color + "06" : "#fff" }},
+              React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "3px" }},
+                React.createElement("div", { style: { fontSize: "10px", fontFamily: "system-ui, sans-serif", fontWeight: 700, color: t.color, letterSpacing: "1px", textTransform: "uppercase" }}, t.label + " \u00B7 " + t.days),
+                t.id === term.id ? React.createElement(Tag, { label: "Current", color: t.color }) : null
+              ),
+              React.createElement("div", { style: { fontSize: "14px", color: "#111" }}, t.title)
+            );
+          })
+        ),
+        React.createElement("div", { style: { fontSize: "10px", fontFamily: "system-ui, sans-serif", fontWeight: 700, letterSpacing: "1.5px", textTransform: "uppercase", color: "#CCC", marginBottom: "10px" }}, "Regions Covered"),
+        React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "8px" }},
+          REGIONS.filter(function(r) { return r.id !== "global"; }).map(function(r) {
+            return React.createElement("div", { key: r.id, style: { border: "1px solid #EBEBEB", borderRadius: "8px", padding: "10px 12px", display: "flex", gap: "8px", alignItems: "center", background: "#fff" }},
+              React.createElement("span", { style: { fontSize: "16px", color: r.color }}, r.icon),
+              React.createElement("span", { style: { fontSize: "11px", fontFamily: "system-ui, sans-serif", color: "#444", lineHeight: 1.3 }}, r.label)
+            );
+          })
+        )
+      );
 
-            {/* ── TODAY ── */}
-            {view === "today" && (
-              <div>
-                {!session ? (
-                  <div style={{ textAlign: "center", padding: "70px 20px" }}>
-                    <div style={{ width: "64px", height: "64px", borderRadius: "50%", background: term.color + "15", border: "2px solid " + term.color + "40", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 18px", fontSize: "24px" }}>🎓</div>
-                    <div style={{ fontSize: "20px", color: "#111", marginBottom: "6px" }}>
-                      {totalDone === 0 ? "Welcome — Day 1 of 365" : "Day " + dayNum + " ready"}
-                    </div>
-                    <div style={{ fontSize: "12px", color: "#AAA", fontFamily: "system-ui, sans-serif", marginBottom: "6px" }}>{todayStr()}</div>
-                    <div style={{ display: "inline-block", background: term.color + "10", border: "1px solid " + term.color + "30", borderRadius: "6px", padding: "6px 16px", marginBottom: "24px" }}>
-                      <span style={{ fontSize: "11px", fontFamily: "system-ui, sans-serif", fontWeight: 600, color: term.color }}>{term.label} · {term.title}</span>
-                    </div>
-                    <div>
-                      <button
-                        onClick={generate}
-                        disabled={loading}
-                        style={{ background: loading ? "#EEE" : term.color, color: loading ? "#AAA" : "#fff", border: "none", padding: "13px 36px", borderRadius: "8px", fontSize: "14px", fontWeight: 600, fontFamily: "system-ui, sans-serif", cursor: loading ? "default" : "pointer", display: "block", margin: "0 auto" }}
-                      >
-                        {loading ? "Generating..." : "Generate Today's Session"}
-                      </button>
-                      {error && (
-                        <div style={{ marginTop: "14px", color: "#C0392B", fontSize: "12px", fontFamily: "system-ui, sans-serif", background: "#FFF0F0", border: "1px solid #FFCCCC", borderRadius: "6px", padding: "10px 14px", maxWidth: "480px", margin: "14px auto 0", textAlign: "left", wordBreak: "break-word" }}>
-                          <strong>Error: </strong>{error}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ) : (
-                  <div>
-                    {/* Session header */}
-                    <div style={{ borderLeft: "4px solid " + term.color, paddingLeft: "18px", marginBottom: "24px" }}>
-                      <div style={{ fontSize: "10px", fontFamily: "system-ui, sans-serif", fontWeight: 700, color: term.color, letterSpacing: "1px", textTransform: "uppercase", marginBottom: "5px" }}>
-                        {term.label} · {todayStr()}
-                      </div>
-                      <div style={{ fontSize: "21px", color: "#111", lineHeight: 1.3, marginBottom: "10px" }}>{session.session_title}</div>
-                      <p style={{ fontSize: "13px", color: "#555", lineHeight: 1.75, fontStyle: "italic", marginBottom: "12px" }}>{session.abstract}</p>
-                      {(session.objectives || []).map((o, i) => (
-                        <div key={i} style={{ display: "flex", gap: "10px", fontSize: "13px", color: "#444", fontFamily: "system-ui, sans-serif", marginBottom: "4px" }}>
-                          <span style={{ color: term.color, fontWeight: 800, flexShrink: 0 }}>0{i + 1}</span>
-                          <span>{o}</span>
-                        </div>
-                      ))}
-                    </div>
-                    <div style={{ fontSize: "10px", fontFamily: "system-ui, sans-serif", fontWeight: 700, letterSpacing: "1.5px", textTransform: "uppercase", color: "#CCC", marginBottom: "10px" }}>
-                      Three Topics — tap to expand
-                    </div>
-                    {(session.topics || []).map((t, i) => (
-                      <TopicCard key={i} topic={t} n={i + 1} termColor={term.color} />
-                    ))}
-                    <div style={{ margin: "22px 0 10px", fontSize: "10px", fontFamily: "system-ui, sans-serif", fontWeight: 700, letterSpacing: "1.5px", textTransform: "uppercase", color: "#CCC" }}>
-                      Data Module
-                    </div>
-                    <DataCard data={session.data} />
-                    <div style={{ marginTop: "20px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
-                      <div style={{ background: "#F8F8F8", border: "1px solid #EBEBEB", borderRadius: "8px", padding: "12px 14px" }}>
-                        <div style={{ fontSize: "10px", fontFamily: "system-ui, sans-serif", fontWeight: 700, letterSpacing: "1px", textTransform: "uppercase", color: "#CCC", marginBottom: "5px" }}>Thematic Thread</div>
-                        <div style={{ fontSize: "13px", color: "#444", lineHeight: 1.6, fontFamily: "system-ui, sans-serif" }}>{session.thread}</div>
-                      </div>
-                      <div style={{ background: "#F8F8F8", border: "1px solid #EBEBEB", borderRadius: "8px", padding: "12px 14px" }}>
-                        <div style={{ fontSize: "10px", fontFamily: "system-ui, sans-serif", fontWeight: 700, letterSpacing: "1px", textTransform: "uppercase", color: "#CCC", marginBottom: "5px" }}>Next Session</div>
-                        <div style={{ fontSize: "13px", color: "#444", lineHeight: 1.6, fontStyle: "italic", fontFamily: "system-ui, sans-serif" }}>"{session.tomorrow}"</div>
-                      </div>
-                    </div>
-                    <div style={{ textAlign: "right", marginTop: "18px" }}>
-                      <button onClick={resetAll} style={{ background: "none", border: "1px solid #EBEBEB", color: "#CCC", padding: "6px 14px", borderRadius: "6px", fontSize: "11px", fontFamily: "system-ui, sans-serif", cursor: "pointer" }}>
-                        Reset Course
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
+      /* ---- ARCHIVE VIEW ---- */
+      var archiveView = React.createElement("div", null,
+        React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "22px" }},
+          React.createElement("div", null,
+            React.createElement("div", { style: { fontSize: "20px", marginBottom: "3px" }}, "All 30 Days"),
+            React.createElement("div", { style: { fontSize: "12px", color: "#AAA", fontFamily: "system-ui, sans-serif" }}, completed.length + " of " + TOTAL_DAYS + " complete")
+          ),
+          React.createElement("div", { style: { textAlign: "center" }},
+            React.createElement("div", { style: { fontSize: "28px", fontWeight: 800, fontFamily: "system-ui, sans-serif", color: term.color, lineHeight: 1 }}, pct + "%"),
+            React.createElement("div", { style: { fontSize: "9px", color: "#CCC", fontFamily: "system-ui, sans-serif", textTransform: "uppercase", letterSpacing: "1px" }}, "Done")
+          )
+        ),
+        /* Progress grid */
+        React.createElement("div", { style: { marginBottom: "24px" }},
+          React.createElement("div", { style: { fontSize: "10px", fontFamily: "system-ui, sans-serif", fontWeight: 700, letterSpacing: "1.5px", textTransform: "uppercase", color: "#CCC", marginBottom: "8px" }}, "Progress Map"),
+          React.createElement("div", { className: "day-grid", style: { display: "grid", gridTemplateColumns: "repeat(15, 1fr)", gap: "4px" }},
+            Array.from({ length: TOTAL_DAYS }, function(_, i) {
+              var d = i + 1;
+              var t = getTermForDay(d);
+              var done = completed.indexOf(d) !== -1;
+              var active = d === currentDay;
+              return React.createElement("div", {
+                key: d,
+                onClick: function() { goTo(d); },
+                title: "Day " + d + ": " + CURRICULUM[i].session_title,
+                style: {
+                  aspectRatio: "1", borderRadius: "4px", cursor: "pointer",
+                  background: done ? t.color : active ? t.color + "30" : "#F0F0F0",
+                  border: active ? "2px solid " + t.color : "2px solid transparent",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: "9px", fontFamily: "system-ui, sans-serif", fontWeight: 700,
+                  color: done ? "#fff" : active ? t.color : "#CCC"
+                }
+              }, d);
+            })
+          )
+        ),
+        /* Day list */
+        React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: "6px" }},
+          CURRICULUM.map(function(sess, i) {
+            var d = i + 1;
+            var t = getTermForDay(d);
+            var done = completed.indexOf(d) !== -1;
+            var active = d === currentDay;
+            return React.createElement("div", {
+              key: d,
+              onClick: function() { goTo(d); },
+              style: {
+                border: "1px solid " + (active ? t.color + "44" : "#EBEBEB"),
+                borderLeft: "4px solid " + t.color,
+                borderRadius: "0 8px 8px 0", padding: "12px 16px", cursor: "pointer",
+                background: active ? t.color + "06" : "#fff"
+              }
+            },
+              React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center" }},
+                React.createElement("div", null,
+                  React.createElement("div", { style: { fontSize: "10px", fontFamily: "system-ui, sans-serif", fontWeight: 700, color: t.color, letterSpacing: "1px", textTransform: "uppercase", marginBottom: "4px" }}, "Day " + d),
+                  React.createElement("div", { style: { fontSize: "14px", color: "#111", lineHeight: 1.4 }}, sess.session_title),
+                  React.createElement("div", { style: { display: "flex", gap: "6px", flexWrap: "wrap", marginTop: "6px" }},
+                    sess.topics.map(function(tp, j) {
+                      var r = findRegion(tp.region);
+                      return React.createElement("span", { key: j, style: { fontSize: "11px", color: r.color }}, r.icon);
+                    })
+                  )
+                ),
+                done ? React.createElement("div", { style: { fontSize: "18px", color: "#2E9E6B", flexShrink: 0, marginLeft: "12px" }}, "\u2713") : null
+              )
+            );
+          })
+        ),
+        React.createElement("div", { style: { textAlign: "right", marginTop: "18px" }},
+          React.createElement("button", { onClick: resetAll, style: { background: "none", border: "1px solid #EBEBEB", color: "#CCC", padding: "6px 14px", borderRadius: "6px", fontSize: "11px", fontFamily: "system-ui, sans-serif", cursor: "pointer" }}, "Reset Progress")
+        )
+      );
 
-            {/* ── SYLLABUS ── */}
-            {view === "syllabus" && (
-              <div>
-                <div style={{ marginBottom: "24px" }}>
-                  <div style={{ fontSize: "20px", marginBottom: "8px" }}>Course Syllabus</div>
-                  <p style={{ fontSize: "13px", color: "#555", lineHeight: 1.75, fontFamily: "system-ui, sans-serif", maxWidth: "580px" }}>
-                    A 365-day geopolitics curriculum spanning every major world region. Each daily session delivers three thematically linked topics and a quantitative data module.
-                  </p>
-                </div>
-                <div style={{ fontSize: "10px", fontFamily: "system-ui, sans-serif", fontWeight: 700, letterSpacing: "1.5px", textTransform: "uppercase", color: "#CCC", marginBottom: "10px" }}>Four Terms</div>
-                <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginBottom: "28px" }}>
-                  {TERMS.map(t => (
-                    <div key={t.id} style={{ border: "1px solid " + (t.id === term.id ? t.color + "44" : "#EBEBEB"), borderLeft: "4px solid " + t.color, borderRadius: "0 8px 8px 0", padding: "12px 16px", background: t.id === term.id ? t.color + "06" : "#fff" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "3px" }}>
-                        <div style={{ fontSize: "10px", fontFamily: "system-ui, sans-serif", fontWeight: 700, color: t.color, letterSpacing: "1px", textTransform: "uppercase" }}>{t.label} · {t.weeks}</div>
-                        {t.id === term.id && <Tag label="Current" color={t.color} />}
-                      </div>
-                      <div style={{ fontSize: "14px", color: "#111" }}>{t.title}</div>
-                    </div>
-                  ))}
-                </div>
-                <div style={{ fontSize: "10px", fontFamily: "system-ui, sans-serif", fontWeight: 700, letterSpacing: "1.5px", textTransform: "uppercase", color: "#CCC", marginBottom: "10px" }}>Regions Covered</div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "8px" }}>
-                  {REGIONS.map(r => (
-                    <div key={r.id} style={{ border: "1px solid #EBEBEB", borderRadius: "8px", padding: "10px 12px", display: "flex", gap: "8px", alignItems: "center" }}>
-                      <span style={{ fontSize: "16px", color: r.color }}>{r.icon}</span>
-                      <span style={{ fontSize: "11px", fontFamily: "system-ui, sans-serif", color: "#444", lineHeight: 1.3 }}>{r.label}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+      /* ---- MAIN RENDER ---- */
+      var content;
+      if (view === "today") content = sessionView;
+      else if (view === "syllabus") content = syllabusView;
+      else content = archiveView;
 
-            {/* ── ARCHIVE ── */}
-            {view === "archive" && (
-              <div>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "22px" }}>
-                  <div>
-                    <div style={{ fontSize: "20px", marginBottom: "3px" }}>Archive</div>
-                    <div style={{ fontSize: "12px", color: "#AAA", fontFamily: "system-ui, sans-serif" }}>
-                      {totalDone} session{totalDone !== 1 ? "s" : ""} complete · {365 - totalDone} remaining
-                    </div>
-                  </div>
-                  <div style={{ textAlign: "center" }}>
-                    <div style={{ fontSize: "28px", fontWeight: 800, fontFamily: "system-ui, sans-serif", color: term.color, lineHeight: 1 }}>{pct}%</div>
-                    <div style={{ fontSize: "9px", color: "#CCC", fontFamily: "system-ui, sans-serif", textTransform: "uppercase", letterSpacing: "1px" }}>Done</div>
-                  </div>
-                </div>
-                <div style={{ marginBottom: "24px" }}>
-                  <div style={{ fontSize: "10px", fontFamily: "system-ui, sans-serif", fontWeight: 700, letterSpacing: "1.5px", textTransform: "uppercase", color: "#CCC", marginBottom: "8px" }}>Year Map</div>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: "3px" }}>
-                    {Array.from({ length: 365 }, (_, i) => (
-                      <div key={i} title={"Day " + (i + 1)} style={{ width: "11px", height: "11px", borderRadius: "2px", background: i < totalDone ? term.color : "#F0F0F0" }} />
-                    ))}
-                  </div>
-                </div>
-                {totalDone === 0 ? (
-                  <div style={{ textAlign: "center", padding: "50px 0", color: "#CCC", fontFamily: "system-ui, sans-serif" }}>No sessions yet.</div>
-                ) : (
-                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                    {Object.entries(history).reverse().map(([key, d], i) => (
-                      <div key={key} style={{ border: "1px solid #EBEBEB", borderRadius: "8px", padding: "12px 16px" }}>
-                        <div style={{ fontSize: "10px", fontFamily: "system-ui, sans-serif", fontWeight: 700, color: term.color, letterSpacing: "1px", textTransform: "uppercase", marginBottom: "5px" }}>
-                          Session {totalDone - i}
-                        </div>
-                        <div style={{ fontSize: "14px", color: "#111", marginBottom: "7px" }}>{d.session_title}</div>
-                        <div style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
-                          {(d.topics || []).map((t, j) => {
-                            const r = REGIONS.find(r => r.label === t.region);
-                            return (
-                              <div key={j} style={{ fontSize: "12px", color: "#888", fontFamily: "system-ui, sans-serif", display: "flex", gap: "6px", alignItems: "center" }}>
-                                <span style={{ color: r ? r.color : "#CCC" }}>{r ? r.icon : "◉"}</span>
-                                <span>{t.title}</span>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
+      return React.createElement("div", { style: { minHeight: "100vh", background: "#FAFAFA", color: "#1A1A1A", fontFamily: "Georgia, serif" }},
+        header,
+        React.createElement("div", { style: { maxWidth: "780px", margin: "0 auto", padding: "28px 28px 80px" }}, content)
       );
     }
 
-    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+    ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));
   </script>
 </body>
 </html>
