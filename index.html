@@ -454,7 +454,7 @@
           ),
           /* Tabs */
           React.createElement("div", { style: { display: "flex" }},
-            [["today", "Session"], ["syllabus", "Syllabus"], ["archive", "All Days"]].map(function(pair) {
+            [["today", "Session"], ["syllabus", "Syllabus"], ["archive", "All Days"], ["ambition", "Ambition"]].map(function(pair) {
               return React.createElement("button", { key: pair[0], onClick: function() { setView(pair[0]); }, style: {
                 background: "none", border: "none",
                 borderBottom: view === pair[0] ? "3px solid " + term.color : "3px solid transparent",
@@ -603,10 +603,50 @@
         )
       );
 
+      /* ---- AMBITION VIEW ---- */
+      var ambitionView = React.createElement("div", null,
+        React.createElement("div", { style: { borderLeft: "4px solid " + term.color, paddingLeft: "18px", marginBottom: "32px" }},
+          React.createElement("div", { style: { fontSize: "10px", fontFamily: "system-ui, sans-serif", fontWeight: 700, color: term.color, letterSpacing: "1px", textTransform: "uppercase", marginBottom: "5px" }}, "Purpose"),
+          React.createElement("div", { style: { fontSize: "21px", color: "#111", lineHeight: 1.3 }}, "The Ambition Behind POL 365")
+        ),
+
+        /* What This Is Not */
+        React.createElement("div", { style: { background: "#fff", borderRadius: "10px", padding: "24px 26px", marginBottom: "18px", border: "1px solid #EBEBEB" }},
+          React.createElement("div", { style: { fontSize: "15px", fontWeight: 700, color: "#111", marginBottom: "14px" }}, "What This Is Not"),
+          React.createElement("p", { style: { fontSize: "14px", lineHeight: 1.75, color: "#333", margin: "0 0 12px" }},
+            "POL 365 is not a news aggregator. It does not chase the daily headline. A student who completes Term I will be better equipped to understand today\u2019s news than someone who has read every headline for six months \u2014 because they will have the structural knowledge to contextualise it."
+          ),
+          React.createElement("p", { style: { fontSize: "14px", lineHeight: 1.75, color: "#333", margin: "0 0 12px" }},
+            "POL 365 is not a university course. It does not require prerequisite knowledge, does not assign essays, and does not assume familiarity with academic IR literature. The readings suggested in each topic are entry points, not obligations."
+          ),
+          React.createElement("p", { style: { fontSize: "14px", lineHeight: 1.75, color: "#333", margin: "0" }},
+            "POL 365 is not politically neutral. No serious curriculum is. The choice to cover the Berlin Conference, Operation Condor, and the Rwandan Genocide reflects a judgement about what matters. That judgement is transparent, consistent, and open to critique."
+          )
+        ),
+
+        /* The Student This Is Built For */
+        React.createElement("div", { style: { background: "#fff", borderRadius: "10px", padding: "24px 26px", marginBottom: "18px", border: "1px solid #EBEBEB" }},
+          React.createElement("div", { style: { fontSize: "15px", fontWeight: 700, color: "#111", marginBottom: "14px" }}, "The Student This Is Built For"),
+          React.createElement("p", { style: { fontSize: "14px", lineHeight: 1.75, color: "#333", margin: "0 0 12px" }},
+            "POL 365 is designed for someone who is intelligent, curious, and time-constrained. They read widely but have no formal political science training. They are frustrated by the shallowness of political commentary but intimidated by academic literature. They want to develop genuine analytical capability \u2014 not just talking points \u2014 and they are willing to commit 20 minutes a day to do it."
+          ),
+          React.createElement("p", { style: { fontSize: "14px", lineHeight: 1.75, color: "#333", margin: "0 0 12px" }},
+            "After 30 days, that student should be able to explain why borders in Africa were drawn the way they were, what the non-aligned movement was trying to achieve, and why the IMF is controversial."
+          ),
+          React.createElement("p", { style: { fontSize: "14px", lineHeight: 1.75, color: "#333", margin: "0 0 12px" }},
+            "After 365 days, they should be able to read any major geopolitical story in any region of the world and situate it within a framework of history, political economy, and ideology that makes it genuinely legible."
+          ),
+          React.createElement("p", { style: { fontSize: "14px", lineHeight: 1.75, color: term.color, fontWeight: 600, fontStyle: "italic", margin: "0" }},
+            "That is the ambition."
+          )
+        )
+      );
+
       /* ---- MAIN RENDER ---- */
       var content;
       if (view === "today") content = sessionView;
       else if (view === "syllabus") content = syllabusView;
+      else if (view === "ambition") content = ambitionView;
       else content = archiveView;
 
       return React.createElement("div", { style: { minHeight: "100vh", background: "#FAFAFA", color: "#1A1A1A", fontFamily: "Georgia, serif" }},
