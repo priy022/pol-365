@@ -38,7 +38,7 @@
       { id: "T1", label: "Term I", title: "State, Empire & the Making of the Modern World", days: "Days 1-10", color: "#3B6FE0", range: [1, 10] },
       { id: "T2", label: "Term II", title: "Cold War, Decolonisation & Ideology", days: "Days 11-20", color: "#E8A838", range: [11, 20] },
       { id: "T3", label: "Term III", title: "Capitalism, Development & Political Economy", days: "Days 21-26", color: "#2E9E6B", range: [21, 26] },
-      { id: "T4", label: "Term IV", title: "Democracy, Geopolitics & the Current Crisis", days: "Days 27-30", color: "#B0454A", range: [27, 30] }
+      { id: "T4", label: "Term IV", title: "Democracy, Geopolitics & the Current Crisis", days: "Days 27-60", color: "#B0454A", range: [27, 60] }
     ];
 
     const TYPE_COLOR = {
@@ -49,7 +49,7 @@
       "Primary Text": "#B0454A"
     };
 
-    const TOTAL_DAYS = 30;
+    const TOTAL_DAYS = 60;
 
     function getTermForDay(n) {
       return TERMS.find(function(t) { return n >= t.range[0] && n <= t.range[1]; }) || TERMS[0];
@@ -336,6 +336,276 @@
           { region: "Europe", type: "Key Event", title: "The 2015 refugee crisis - migration, solidarity, and the politics of the border" }
         ],
         data: { title: "Climate Vulnerability vs GDP", source: "Notre Dame Global Adaptation Initiative", description: "Climate vulnerability index by country vs GDP" }
+      },
+      {
+        session_title: "The State and the Market — Ideological Foundations",
+        topics: [
+          { region: "Europe", type: "Ideology & Theory", title: "Keynesianism vs. monetarism — Friedman, Hayek, and the battle over the role of the state" },
+          { region: "United States", type: "Key Actor", title: "Ronald Reagan — supply-side economics, deregulation, and the neoliberal revolution" },
+          { region: "Europe", type: "Key Actor", title: "Margaret Thatcher — "There is no such thing as society" and the dismantling of postwar consensus" }
+        ],
+        data: { title: "Government Expenditure as % of GDP", source: "OECD", description: "Government expenditure as % of GDP across OECD nations 1960–2000" }
+      },
+      {
+        session_title: "The Green Revolution — Food, Power, and Agricultural Dependency",
+        topics: [
+          { region: "South Asia", type: "Key Event", title: "The Green Revolution in India and Pakistan (1960s–1970s) — yields, subsidies, and soil" },
+          { region: "Sub-Saharan Africa", type: "Case Study", title: "Why the Green Revolution bypassed Africa — markets, infrastructure, and political will" },
+          { region: "United States", type: "Key Actor", title: "Norman Borlaug — the Nobel laureate who saved a billion lives and created new dependencies" }
+        ],
+        data: { title: "Global Cereal Yields by Region", source: "FAO", description: "Global cereal yields by region 1960–2000 vs fertiliser input costs" }
+      },
+      {
+        session_title: "Debt, Crisis, and the Architecture of Financial Power",
+        topics: [
+          { region: "Latin America", type: "Key Event", title: "The Latin American debt crisis (1982) — Mexico's default and the lost decade" },
+          { region: "Sub-Saharan Africa", type: "Key Event", title: "African sovereign debt and the Heavily Indebted Poor Countries initiative" },
+          { region: "Global", type: "Ideology & Theory", title: "Odious debt — the legal argument that illegitimate governments' debts should not bind their successors" }
+        ],
+        data: { title: "External Debt Stocks as % of GNI", source: "World Bank", description: "External debt stocks as % of GNI by region 1970–2000" }
+      },
+      {
+        session_title: "Trade Regimes and the Politics of Market Access",
+        topics: [
+          { region: "Global", type: "Key Event", title: "The GATT and the birth of the WTO (1994) — from club to institution" },
+          { region: "Europe", type: "Key Event", title: "The EU Common Agricultural Policy — farm subsidies, trade distortion, and African farmers" },
+          { region: "SE Asia & Pacific", type: "Case Study", title: "ASEAN's economic integration — gradualism, consensus, and the limits of regionalism" }
+        ],
+        data: { title: "Agricultural Subsidy Levels", source: "WTO", description: "Agricultural subsidy levels in OECD vs developing countries 1995–2020" }
+      },
+      {
+        session_title: "Labour, Migration, and the Political Economy of Movement",
+        topics: [
+          { region: "Europe", type: "Key Event", title: "Gastarbeiter — Germany's guest worker programme and the permanent "temporary" migrant" },
+          { region: "Middle East & N. Africa", type: "Case Study", title: "Gulf labour migration — kafala, remittances, and the political economy of disposability" },
+          { region: "United States", type: "Key Actor", title: "César Chávez — the United Farm Workers, labour rights, and the politics of the invisible worker" }
+        ],
+        data: { title: "Global Remittance Flows vs ODA", source: "World Bank", description: "Global remittance flows vs ODA 1990–2023" }
+      },
+      {
+        session_title: "Nuclear Weapons and the Logic of Deterrence",
+        topics: [
+          { region: "United States", type: "Ideology & Theory", title: "Mutually Assured Destruction — the logic and the lunacy of nuclear deterrence" },
+          { region: "South Asia", type: "Key Event", title: "India and Pakistan go nuclear (1998) — the tests, the sanctions, and the new deterrence" },
+          { region: "Middle East & N. Africa", type: "Case Study", title: "Israel's nuclear ambiguity — the Samson Option and the politics of deliberate opacity" }
+        ],
+        data: { title: "Global Nuclear Warhead Counts", source: "Arms Control Association", description: "Global nuclear warhead counts by country 1945–2024" }
+      },
+      {
+        session_title: "Soft Power — Culture, Media, and Ideological Projection",
+        topics: [
+          { region: "United States", type: "Ideology & Theory", title: "Joseph Nye's soft power — the concept, its critics, and its limits" },
+          { region: "China & East Asia", type: "Key Event", title: "Hallyu — South Korean cultural exports and the geopolitics of pop culture" },
+          { region: "Middle East & N. Africa", type: "Key Event", title: "Al Jazeera (1996) — satellite television, information sovereignty, and Arab public sphere" }
+        ],
+        data: { title: "Soft Power Rankings", source: "Portland Soft Power 30 Index", description: "Soft power rankings by country 2015–2019" }
+      },
+      {
+        session_title: "Sanctions, Economic Coercion, and the Dollar Weapon",
+        topics: [
+          { region: "United States", type: "Ideology & Theory", title: "Dollar hegemony and the weaponisation of SWIFT — financial statecraft as foreign policy" },
+          { region: "Middle East & N. Africa", type: "Case Study", title: "Iran under sanctions (1979–present) — adaptation, evasion, and the costs of isolation" },
+          { region: "Russia & Eurasia", type: "Key Event", title: "Post-2022 sanctions on Russia — the most comprehensive sanctions regime in history and its limits" }
+        ],
+        data: { title: "Economic Impact of Sanctions Regimes", source: "IMF", description: "Economic impact of sanctions regimes by country and duration 1950–2022" }
+      },
+      {
+        session_title: "The International Institutions — Design, Power, and Legitimacy",
+        topics: [
+          { region: "Global", type: "Key Event", title: "The founding of the United Nations (1945) — architecture, veto, and the great power bargain" },
+          { region: "Global", type: "Ideology & Theory", title: "The UNSC veto — why it exists, how it paralyses, and why no one can remove it" },
+          { region: "Global", type: "Case Study", title: "The International Criminal Court — universal jurisdiction, African bias claims, and great power exemption" }
+        ],
+        data: { title: "UN Security Council Veto Use", source: "UN Security Council", description: "UNSC veto use by country and subject matter 1946–2023" }
+      },
+      {
+        session_title: "Intelligence, Covert Action, and the Secret State",
+        topics: [
+          { region: "United States", type: "Key Event", title: "CIA covert operations in the Cold War — Iran (1953), Guatemala (1954), Chile (1973)" },
+          { region: "Russia & Eurasia", type: "Key Actor", title: "The KGB and its successors — from Cold War espionage to assassination as foreign policy" },
+          { region: "Middle East & N. Africa", type: "Case Study", title: "Mossad and targeted assassination — doctrine, deniability, and the ethics of state killing" }
+        ],
+        data: { title: "Casualties from CIA Covert Operations", source: "Costs of Covert War Project", description: "Estimated casualties from CIA covert operations 1947–2000" }
+      },
+      {
+        session_title: "Gender, Power, and the International Order",
+        topics: [
+          { region: "Global", type: "Ideology & Theory", title: "Feminist IR theory — why gender is a geopolitical category, not just a domestic one" },
+          { region: "Middle East & N. Africa", type: "Key Actor", title: "Nawal El Saadawi — Egyptian feminist, the state, and the cost of speaking truth" },
+          { region: "South Asia", type: "Case Study", title: "Women's political representation in Rwanda and Bangladesh — quotas, power, and genuine agency" }
+        ],
+        data: { title: "Women in National Parliaments", source: "IPU", description: "Women in national parliaments by region 1995–2024" }
+      },
+      {
+        session_title: "The City as Geopolitical Actor",
+        topics: [
+          { region: "Global", type: "Ideology & Theory", title: "Global cities — Saskia Sassen's thesis on New York, London, and Tokyo as nodes of power" },
+          { region: "China & East Asia", type: "Key Event", title: "China's special economic zones — Shenzhen from fishing village to megalopolis in 40 years" },
+          { region: "Middle East & N. Africa", type: "Case Study", title: "Dubai's rise — the city-state model, migrant labour, and financial hub ambition" }
+        ],
+        data: { title: "Share of Global GDP by Top 600 Cities", source: "McKinsey Global Institute", description: "Share of global GDP generated by top 600 cities 2007–2025" }
+      },
+      {
+        session_title: "Terrorism — Causes, Strategies, and State Responses",
+        topics: [
+          { region: "Global", type: "Ideology & Theory", title: "What is terrorism? — definitions, the "freedom fighter" problem, and why it matters legally" },
+          { region: "Europe", type: "Key Event", title: "The IRA and the Good Friday Agreement (1998) — from armed struggle to political settlement" },
+          { region: "Middle East & N. Africa", type: "Case Study", title: "ISIS — the caliphate model, territorial control, and the limits of the counter-terrorism paradigm" }
+        ],
+        data: { title: "Terrorist Incidents by Region and Ideology", source: "Global Terrorism Database", description: "Terrorist incidents by region and ideology 1970–2023" }
+      },
+      {
+        session_title: "Technology, Surveillance, and the Digital State",
+        topics: [
+          { region: "China & East Asia", type: "Key Event", title: "China's Social Credit System and digital authoritarianism — the infrastructure of control" },
+          { region: "United States", type: "Key Actor", title: "Edward Snowden — mass surveillance, the NSA, and the global right to privacy" },
+          { region: "Global", type: "Ideology & Theory", title: "Cyber sovereignty vs. the open internet — the emerging fracture of the global digital order" }
+        ],
+        data: { title: "Freedom on the Net Scores", source: "Freedom House", description: "Freedom on the Net scores by country 2011–2023" }
+      },
+      {
+        session_title: "Land, Agriculture, and the Politics of Rural Power",
+        topics: [
+          { region: "Latin America", type: "Key Event", title: "Land reform in Mexico (1917–1940) — the ejido system and the limits of revolutionary redistribution" },
+          { region: "Sub-Saharan Africa", type: "Case Study", title: "Zimbabwe's land reform (2000–2008) — from bread basket to economic collapse" },
+          { region: "China & East Asia", type: "Key Event", title: "China's collectivisation and decollectivisation — from communes to household responsibility" }
+        ],
+        data: { title: "Agricultural Land Concentration", source: "World Bank", description: "Agricultural land concentration (Gini) by country 1960–2010" }
+      },
+      {
+        session_title: "Pandemics, Public Health, and State Capacity",
+        topics: [
+          { region: "Global", type: "Key Event", title: "The 1918 influenza pandemic — 50 million dead and the politics of wartime silence" },
+          { region: "Sub-Saharan Africa", type: "Case Study", title: "HIV/AIDS in sub-Saharan Africa — denial, pharmaceutical power, and the patent wars" },
+          { region: "Global", type: "Key Event", title: "COVID-19 (2020–2022) — vaccine nationalism, WHO credibility, and the geopolitics of health" }
+        ],
+        data: { title: "Excess Mortality by Country Income Group", source: "WHO", description: "Excess mortality by country income group during COVID-19 vs historical pandemics" }
+      },
+      {
+        session_title: "Borders, Walls, and the Securitisation of Migration",
+        topics: [
+          { region: "United States", type: "Key Event", title: "US-Mexico border militarisation (1994–present) — Operation Gatekeeper and the death geography" },
+          { region: "Europe", type: "Key Event", title: "Fortress Europe — Frontex, the Mediterranean, and the externalisation of border control" },
+          { region: "Middle East & N. Africa", type: "Key Actor", title: "The Rohingya crisis — statelessness, ethnic cleansing, and ASEAN's silence" }
+        ],
+        data: { title: "Migrant Deaths by Route", source: "IOM", description: "Migrant deaths by route 2014–2023" }
+      },
+      {
+        session_title: "Africa Rising — Growth, Governance, and Geopolitical Repositioning",
+        topics: [
+          { region: "Sub-Saharan Africa", type: "Key Event", title: "The Economist's "Africa Rising" thesis (2011) — what the growth data showed and what it missed" },
+          { region: "Sub-Saharan Africa", type: "Key Actor", title: "Paul Kagame — Rwanda's developmental authoritarianism and the limits of the Singapore comparison" },
+          { region: "Sub-Saharan Africa", type: "Case Study", title: "The African Continental Free Trade Area (AfCFTA, 2021) — ambition, implementation, and infrastructure gaps" }
+        ],
+        data: { title: "Sub-Saharan Africa GDP Per Capita Growth", source: "World Bank", description: "Sub-Saharan Africa GDP per capita growth vs East Asia 1990–2023" }
+      },
+      {
+        session_title: "Water — The Coming Resource War",
+        topics: [
+          { region: "Middle East & N. Africa", type: "Key Event", title: "The Nile Dam dispute — Ethiopia's GERD, Egypt's existential anxiety, and the failure of negotiation" },
+          { region: "South Asia", type: "Case Study", title: "The Indus Waters Treaty (1960) — one of the world's most resilient water agreements and its stress points" },
+          { region: "China & East Asia", type: "Key Event", title: "China's dam-building on the Mekong — upstream power and downstream food security" }
+        ],
+        data: { title: "Water Conflict Incidents by Region", source: "Pacific Institute", description: "Water conflict database, incidents by region 1900–2023" }
+      },
+      {
+        session_title: "The Far Right — From Fringe to Mainstream",
+        topics: [
+          { region: "Europe", type: "Key Actor", title: "Viktor Orbán — illiberal democracy, EU funds, and the model for authoritarian entrenchment" },
+          { region: "Europe", type: "Key Event", title: "The rise of the Alternative for Germany (AfD) — a mainstream economy's populist insurgency" },
+          { region: "Latin America", type: "Key Actor", title: "Jair Bolsonaro — militarism, Amazon destruction, and the Brazilian far right's electoral test" }
+        ],
+        data: { title: "Far-Right Party Vote Share in Europe", source: "V-Dem", description: "Far-right party vote share in European parliaments 2000–2023" }
+      },
+      {
+        session_title: "The Korean Peninsula — Division, Nuclearisation, and Frozen Conflict",
+        topics: [
+          { region: "China & East Asia", type: "Key Event", title: "The Korean War (1950–1953) — the first hot war of the Cold War and its unfinished armistice" },
+          { region: "China & East Asia", type: "Key Actor", title: "Kim Jong-un — nuclear brinkmanship, strategic patience, and the dynastic communist state" },
+          { region: "China & East Asia", type: "Case Study", title: "South Korea's democratisation (1987) — from military dictatorship to vibrant democracy in one generation" }
+        ],
+        data: { title: "North Korean Food Security vs South Korean GDP", source: "World Food Programme", description: "North Korean food security data vs South Korean GDP 1990–2023" }
+      },
+      {
+        session_title: "Turkey — Between East and West",
+        topics: [
+          { region: "Middle East & N. Africa", type: "Key Actor", title: "Atatürk — the secular revolution, alphabet reform, and the top-down modernisation of Turkey" },
+          { region: "Middle East & N. Africa", type: "Key Actor", title: "Erdogan — political Islam, NATO membership, and the slow strangulation of Turkish democracy" },
+          { region: "Middle East & N. Africa", type: "Case Study", title: "The Kurdish question — PKK, Rojava, and Turkey's Kurdish population as permanent geopolitical variable" }
+        ],
+        data: { title: "Turkey Political Rights and Civil Liberties", source: "Freedom House", description: "Turkey's political rights and civil liberties scores 2002–2023" }
+      },
+      {
+        session_title: "The Persian Gulf — Monarchy, Modernisation, and Regional Rivalry",
+        topics: [
+          { region: "Middle East & N. Africa", type: "Key Actor", title: "Mohammed bin Salman — Vision 2030, Khashoggi, and the limits of reformist authoritarianism" },
+          { region: "Middle East & N. Africa", type: "Case Study", title: "The Qatar blockade (2017–2021) — Gulf solidarity's fiction and the small state's survival strategy" },
+          { region: "Middle East & N. Africa", type: "Key Event", title: "The Iran-Saudi rivalry — sectarianism, proxy wars, and the logic of regional hegemony" }
+        ],
+        data: { title: "Gulf State Military Expenditure", source: "SIPRI", description: "Gulf state military expenditure as % of GDP 2000–2023" }
+      },
+      {
+        session_title: "Southeast Asia — Development, Authoritarianism, and Great Power Pressure",
+        topics: [
+          { region: "SE Asia & Pacific", type: "Key Actor", title: "Lee Kuan Yew — the Singapore model, "Asian values," and the authoritarian development bargain" },
+          { region: "SE Asia & Pacific", type: "Key Event", title: "Myanmar's coup (2021) — the military's return and ASEAN's impotence" },
+          { region: "SE Asia & Pacific", type: "Case Study", title: "The Philippines under Duterte — the drug war, extrajudicial killings, and alignment with China" }
+        ],
+        data: { title: "Southeast Asian Public Opinion on China vs USA", source: "Lowy Institute", description: "Southeast Asian public opinion on China vs USA 2020–2023" }
+      },
+      {
+        session_title: "The Horn of Africa — War, Famine, and Geopolitical Competition",
+        topics: [
+          { region: "Sub-Saharan Africa", type: "Key Event", title: "Somalia's state collapse (1991–present) — warlordism, piracy, and the longest-running failed state" },
+          { region: "Sub-Saharan Africa", type: "Case Study", title: "The Tigray War (2020–2022) — Africa's deadliest recent conflict and international indifference" },
+          { region: "Sub-Saharan Africa", type: "Key Actor", title: "Abiy Ahmed — Nobel Peace Prize winner who launched a war and the paradox of African leadership" }
+        ],
+        data: { title: "Conflict Fatalities in the Horn of Africa", source: "ACLED", description: "Conflict fatalities in the Horn of Africa 2010–2023" }
+      },
+      {
+        session_title: "Latin America's Left Turn — Pink Tide, Commodity Boom, and Retrenchment",
+        topics: [
+          { region: "Latin America", type: "Key Actor", title: "Lula da Silva — the Workers' Party, Bolsa Família, and Brazil's poverty reduction miracle" },
+          { region: "Latin America", type: "Key Actor", title: "Evo Morales — indigenous identity, resource nationalism, and Bolivia's constitutional revolution" },
+          { region: "Latin America", type: "Key Event", title: "The commodity supercycle (2003–2014) — Chinese demand, resource windfalls, and the policy window that closed" }
+        ],
+        data: { title: "Poverty and Inequality Reduction in Latin America", source: "CEPAL", description: "Poverty and inequality reduction in Latin America 2002–2014 vs 2014–2022" }
+      },
+      {
+        session_title: "Central Asia — The Great Game Revisited",
+        topics: [
+          { region: "Russia & Eurasia", type: "Key Event", title: "The dissolution of the Soviet Union and Central Asian independence — statehood without nationalism" },
+          { region: "Russia & Eurasia", type: "Case Study", title: "Kazakhstan — balancing Russia, China, and the West in a landlocked petrostate" },
+          { region: "China & East Asia", type: "Key Event", title: "China's BRI in Central Asia — pipelines, railways, and the new Silk Road's debt politics" }
+        ],
+        data: { title: "Central Asian GDP Growth and FDI Composition", source: "IMF", description: "Central Asian GDP growth and FDI composition by source country 2000–2023" }
+      },
+      {
+        session_title: "The Media, Disinformation, and Democratic Decay",
+        topics: [
+          { region: "Global", type: "Ideology & Theory", title: "The information disorder — misinformation, disinformation, and malinformation as political weapons" },
+          { region: "Russia & Eurasia", type: "Key Event", title: "Russian information warfare — RT, Internet Research Agency, and the firehose of falsehood" },
+          { region: "United States", type: "Case Study", title: "Social media and political polarisation — Facebook's algorithm, filter bubbles, and the 2016 election" }
+        ],
+        data: { title: "Trust in News Media by Country", source: "Reuters Institute Digital News Report", description: "Trust in news media by country 2012–2023" }
+      },
+      {
+        session_title: "The Arctic — Climate, Resources, and the New Frontier",
+        topics: [
+          { region: "Russia & Eurasia", type: "Key Event", title: "Russia's Arctic militarisation — bases, icebreakers, and the Northern Sea Route as strategic asset" },
+          { region: "United States", type: "Case Study", title: "Greenland's geopolitical moment — rare earths, melting ice, and great power interest" },
+          { region: "Global", type: "Ideology & Theory", title: "The Arctic Council — the last functioning great power cooperative forum and its current strain" }
+        ],
+        data: { title: "Arctic Sea Ice Extent Decline", source: "National Snow and Ice Data Center", description: "Arctic sea ice extent decline 1979–2023 vs shipping route openings" }
+      },
+      {
+        session_title: "What Comes After the Liberal Order?",
+        topics: [
+          { region: "Global", type: "Ideology & Theory", title: "Multipolarity vs. hegemonic stability — can the international order function without a dominant power?" },
+          { region: "China & East Asia", type: "Ideology & Theory", title: "The Shanghai Cooperation Organisation — an alternative security architecture and its coherence problem" },
+          { region: "Global", type: "Case Study", title: "BRICS expansion (2024) — the ambition, the contradictions, and the limits of anti-Western solidarity" }
+        ],
+        data: { title: "Share of Global GDP by Country Grouping", source: "IMF", description: "Share of global GDP by country grouping (G7 vs BRICS) at PPP 2000–2030 (projected)" }
       }
     ];
 
@@ -513,7 +783,7 @@
       var syllabusView = React.createElement("div", null,
         React.createElement("div", { style: { marginBottom: "24px" }},
           React.createElement("div", { style: { fontSize: "20px", marginBottom: "8px" }}, "Course Syllabus"),
-          React.createElement("p", { style: { fontSize: "13px", color: "#555", lineHeight: 1.75, fontFamily: "system-ui, sans-serif", maxWidth: "580px" }}, "A 30-day geopolitics curriculum spanning every major world region. Each daily session delivers three thematically linked topics and a quantitative data module.")
+          React.createElement("p", { style: { fontSize: "13px", color: "#555", lineHeight: 1.75, fontFamily: "system-ui, sans-serif", maxWidth: "580px" }}, "A 60-day geopolitics curriculum spanning every major world region. Each daily session delivers three thematically linked topics and a quantitative data module.")
         ),
         React.createElement("div", { style: { fontSize: "10px", fontFamily: "system-ui, sans-serif", fontWeight: 700, letterSpacing: "1.5px", textTransform: "uppercase", color: "#CCC", marginBottom: "10px" }}, "Four Terms"),
         React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: "8px", marginBottom: "28px" }},
@@ -542,7 +812,7 @@
       var archiveView = React.createElement("div", null,
         React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "22px" }},
           React.createElement("div", null,
-            React.createElement("div", { style: { fontSize: "20px", marginBottom: "3px" }}, "All 30 Days"),
+            React.createElement("div", { style: { fontSize: "20px", marginBottom: "3px" }}, "All 60 Days"),
             React.createElement("div", { style: { fontSize: "12px", color: "#AAA", fontFamily: "system-ui, sans-serif" }}, completed.length + " of " + TOTAL_DAYS + " complete")
           ),
           React.createElement("div", { style: { textAlign: "center" }},
@@ -641,7 +911,7 @@
             "POL 365 is designed for someone who is intelligent, curious, and time-constrained. They read widely but have no formal political science training. They are frustrated by the shallowness of political commentary but intimidated by academic literature. They want to develop genuine analytical capability \u2014 not just talking points \u2014 and they are willing to commit 20 minutes a day to do it."
           ),
           React.createElement("p", { style: { fontSize: "14px", lineHeight: 1.75, color: "#333", margin: "0 0 12px" }},
-            "After 30 days, that student should be able to explain why borders in Africa were drawn the way they were, what the non-aligned movement was trying to achieve, and why the IMF is controversial."
+            "After 60 days, that student should be able to explain why borders in Africa were drawn the way they were, what the non-aligned movement was trying to achieve, and why the IMF is controversial."
           ),
           React.createElement("p", { style: { fontSize: "14px", lineHeight: 1.75, color: "#333", margin: "0 0 12px" }},
             "After 365 days, they should be able to read any major geopolitical story in any region of the world and situate it within a framework of history, political economy, and ideology that makes it genuinely legible."
