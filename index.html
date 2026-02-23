@@ -37,8 +37,8 @@
     const TERMS = [
       { id: "T1", label: "Term I", title: "State, Empire & the Making of the Modern World", days: "Days 1-10", color: "#3B6FE0", range: [1, 10] },
       { id: "T2", label: "Term II", title: "Cold War, Decolonisation & Ideology", days: "Days 11-20", color: "#E8A838", range: [11, 20] },
-      { id: "T3", label: "Term III", title: "Capitalism, Development & Political Economy", days: "Days 21-27", color: "#2E9E6B", range: [21, 27] },
-      { id: "T4", label: "Term IV", title: "Geopolitics, Democracy & the Current Crisis", days: "Days 28-30", color: "#B0454A", range: [28, 30] }
+      { id: "T3", label: "Term III", title: "Capitalism, Development & Political Economy", days: "Days 21-26", color: "#2E9E6B", range: [21, 26] },
+      { id: "T4", label: "Term IV", title: "Democracy, Geopolitics & the Current Crisis", days: "Days 27-30", color: "#B0454A", range: [27, 30] }
     ];
 
     const TYPE_COLOR = {
@@ -360,9 +360,19 @@
           React.createElement("div", { style: { flex: 1 }},
             React.createElement("div", { style: { display: "flex", gap: "6px", flexWrap: "wrap", marginBottom: "6px" }},
               React.createElement(Tag, { label: topic.type, color: tc }),
-              React.createElement(Tag, { label: topic.region, color: reg.color })
+              React.createElement(Tag, { label: topic.region, color: reg.color }),
+              topic.timePeriod ? React.createElement(Tag, { label: topic.timePeriod, color: "#999" }) : null
             ),
-            React.createElement("div", { style: { fontSize: "15px", fontWeight: 600, color: "#1A1A1A", lineHeight: 1.5 }}, n + ". " + topic.title)
+            React.createElement("div", { style: { fontSize: "15px", fontWeight: 600, color: "#1A1A1A", lineHeight: 1.5, marginBottom: topic.keyActors || topic.description ? "10px" : "0" }}, n + ". " + topic.title),
+            topic.keyActors ? React.createElement("div", { style: { fontSize: "12px", color: "#666", fontFamily: "system-ui, sans-serif", lineHeight: 1.6, marginBottom: "8px" }},
+              React.createElement("span", { style: { fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px", fontSize: "10px", color: "#999" }}, "Key actors\u00A0\u00A0"),
+              topic.keyActors
+            ) : null,
+            topic.description ? React.createElement("div", { style: { fontSize: "13px", color: "#444", lineHeight: 1.75, fontFamily: "system-ui, sans-serif", marginBottom: topic.ledTo ? "12px" : "0" }}, topic.description) : null,
+            topic.ledTo ? React.createElement("div", { style: { background: "#F7FFF9", border: "1px solid #D0EDD8", borderRadius: "6px", padding: "10px 14px" }},
+              React.createElement("div", { style: { fontSize: "10px", fontWeight: 700, letterSpacing: "1px", textTransform: "uppercase", color: "#2E9E6B", marginBottom: "5px", fontFamily: "system-ui, sans-serif" }}, "What it led to"),
+              React.createElement("div", { style: { fontSize: "13px", color: "#333", lineHeight: 1.7, fontFamily: "system-ui, sans-serif" }}, topic.ledTo)
+            ) : null
           )
         )
       );
